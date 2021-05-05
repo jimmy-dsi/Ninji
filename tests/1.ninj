@@ -1,0 +1,223 @@
+alias and as
+cached case catch con constrain
+default
+else eval
+false fin finally for func
+if import in inf interface is
+let
+map module
+nan not nothing null
+oper or
+proc
+repeat return
+select sizeof struct switch
+tests this throw true try typeof
+unsafe
+var
+when with 
+
+alias_ and_ as_ cached_ case_ catch_ con_ constrain_
+default_ else_ eval_ false_ fin_ finally_ for_ func_
+if_ import_ in_ inf_ interface_ is_
+let_ map_ module_ nan_ not_ nothing_ null_
+oper_ or_ proc_ repeat_ return_
+select_ sizeof_ struct_ switch_
+tests_ this_ throw_ true_ try_ typeof_
+unsafe_ var_ when_ with_
+
+cosstrain fiially noohing a a
+
+0 1 01 0001 28342 10
+0b 01b 2b 254b
+0B 01B 2B 254B
+0w 01w 2w 254w
+0W 01W 2W 254W
+0l 01l 2l 254l
+0L 01L 2L 254L
+0d 01d 2d 254d
+0D 01D 2D 254D
+0q 01q 2q 254q
+0Q 01Q 2Q 254Q
+
+0a 1a 01a 234a
+
+0b_ 01b_ 1b_ 234b_ 0_3 1_33324
+0B_ 01B_ 1B_ 234B_
+0w_ 01w_ 1w_ 234w_
+0W_ 01W_ 1W_ 234W_
+0l_ 01l_ 1l_ 234l_
+0L_ 01L_ 1L_ 234L_
+0d_ 01d_ 1d_ 234d_
+0D_ 01D_ 1D_ 234D_
+0q_ 01q_ 1q_ 234q_
+0Q_ 01Q_ 1Q_ 234Q_
+
+0x 0x_ 0. 01. 134. 012. 1.
+
+1_33324.
+
+0b._ 0b. 0b._. 0b._._ 0b_. 0b_._
+
+0.0 1.0 01.0 12.12
+0.0f 1.0f 01.0f 12.12f
+0.0F 1.0F 01.0F 12.12F
+0.0d 1.0d 01.0d 12.12d
+0.0D 1.0D 01.0D 12.12D
+0.0x 1.0x 01.0x 12.12x
+0.0X 1.0X 01.0X 12.12X
+
+0.0. 1.0. 12.0.
+0.23. 1.23. 12.23.
+0.0.0 1.0.0 12.0.0
+0.23.0 1.23.0 12.23.0
+0.23.0 1.23.0 12.23.0
+0.23.23 1.23.23 12.23.23
+
+0.0ff 0.0a 0.0f. 0.0af 0.0f_
+15.0ff 56.0a 78.0f. 94.0af 33.0f_
+0.43ff 0.16a 0.53f. 0.45af 0.99f_
+15.99ff 56.99a 78.99f. 94.99af 33.99f_
+
+0b0 0b1 0b01 0b10
+0b110101010010101000010100
+
+0b2 0b12 0b012
+0bA 0b1A 0b01A
+0b_1 0b1_1 0b01_1
+0b. 0b1. 0b01.
+0b.1 0b1.1 0b01.1
+
+0x0 0xC 0x4A 0xF2
+0x0 0xc 0x4a 0xf2
+0xEfCbaD
+
+0xH 0x6G 0xX7F
+0xh 0x6g 0xx7F
+
+0x_ 0x_1 0x_ANB 0x_ahXj
+
+$0 $23 $A $1B $CD
+$5A0 $0162 $ACF $001D
+$165A0 $0F5162 $D3ACF $00001D
+$5B165A0 $00AF5162 $C4D3ACF $0000001D
+$3F5B165A0 $F00AF5162 $44C4D3ACF $00000001D
+$ABCDEF1234567890
+$FFFFFFFFFFFFFFFF
+$FFFFFFFFFFFFFFF
+$0000000000000000
+
+$0X $12. $5HJ_a7.x $_ $fde $FDe136T
+
+$FFFFFFFFFFFFFFF_
+
+$%01011101
+$%0010110100101011
+$%111010110010101011110100
+$%00001010101010101010101011010101
+$%111110010010000011000010001001001
+$%0000000000111110100100101010100100000000001111101001001010101001
+
+$%0101110
+$%001011010010101
+$%11101011001010101111010
+$%0000101010101010101010101101010
+$%11111001001000001100001000100100
+$%000000000011111010010010101010010000000000111110100100101010100
+
+$%010111011
+$%00101101001010111
+$%1110101100101010111101000
+$%000010101010101010101010110101010
+$%1111100100100000110000100010010010
+$%00000000001111101001001010101001000000000011111010010010101010011
+
+$%2
+
+$%012 $%01A9B_.__AHjfhkf834_.6 $% $$ $$%1 
+
+0f 0F 0x 0X 21f 12F 12x 12X 
+0XX 12XX
+0ff 12ff 0FF 12FF 
+%1 ; Semi-colon comment
+
+=:+-*/%&|^<>!~//A comment
+@#?.,()[]/*Multi-line comment*/{}
+
+/= -= /* Multi-line
+	commment *
+	
+	#2 */
+ -> -- Comment #2
+ 
+= == ===
+: :=
++ += - -= ->
+* *= / /= % %=
+& &= | |= ^ ^=
+> >= >> >>=
+< <= << <<= <- <--hdhgjsg
+<- --sjfdhdajf
+~ ! != !==
+
+xor xor_ x xo
+do do_ d 
+until until_ u \un unt \unti
+
+@ # ? ... . ..  , ( ) [ ] { } : ::
+
+with test, thing {
+	..count = 3
+	. = 4
+}
+
+if not  a == b
+		and c == d
+		and e not in f
+		and g is not int
+{
+	
+}
+
+for each v in some_array {
+	value := v.item1
+	index := v.item2
+}
+
+for each v, i in some_array {
+	value := v
+	index := i
+}
+
+a1 := [ 1, 2, 3 ]     // static  array literal: array(int, 3)
+a2 := [ 1, 2, 3 ... ] // dynamic array literal: array(int) (initialized w 3 elements)
+
+each e ea eac each_
+
+a = 6
+b5=7
+_8+9
+
+inherit implement 
+in inf inh inhe inher inheri inherit_
+i im imp impl imple implem impleme implemen implement_
+
+ありがとうございます、岡山 a 😂😂
+dafg /* 何に？？？ */ 2
+
+Outer:
+for each v, i in array1 {
+	Inner:
+	for each w, j in array2 {
+		if j == 1 {
+			continue Outer
+		} else if j == 2 {
+			break Outer
+		}
+	}
+}
+
+c co con cont conti contin continu continue_
+cons const constr constra constrai constrain constrain_
+b br bre brea break break_ break2
+
+e en enu enum enum_ \ \\

@@ -1,0 +1,128 @@
+struct *object {
+	func convert:[dest_type type]() dest_type
+	func compare(rhs object) byte
+	func get_hash_code() byte
+}
+
+interface enumerable(subtype type, use_index bool = true) {
+	con :iterator = when use_index select (*subtype, uint) else select subtype
+
+	func for_each_begin() ::iterator
+	func for_each_next(iter ::iterator) ::iterator
+	func for_each_end() ::iterator
+}
+
+for each v, i in expr() {
+}
+
+// is equivalent to:
+do {
+	for_expr := expr()
+	for (v, i) := for_expr.for_each_begin(),
+		(v, i) != for_expr.for_each_end(),
+		(v, i) =  for_expr.for_each_next((v, i))
+	{
+	}
+}
+
+struct range_object : enumerable(int, false) {
+	_limit int = 0
+
+	func :new(limit int) *range_object {
+		return range_object {
+			_limit: limit
+		}
+	}
+
+	func for_each_begin() int {
+		return 0
+	}
+	
+	func for_each_next(iter int) int {
+		return iter + 1
+	}
+	
+	func for_each_end() int {
+		return _limit
+	}
+}
+
+func range(limit int) *range_object {
+	return range_object:new(limit)
+}
+
+// for each range example:
+sum := 0
+for each i in range(10) {
+	sum += i
+}
+
+// equivalent code:
+sum := 0
+do {
+	___for_expr := range(10)
+	for i := ___for_expr.for_each_begin(),
+		i != ___for_expr.for_each_end(),
+		i =  ___for_expr.for_each_next(i)
+	{
+		sum += i
+	}
+}
+
+
+interface container {
+	func count() uint
+	func add:(rhs) object
+}
+
+enum errors {
+	none = 0,
+	
+	unknown_error,
+	conversion_error
+}
+
+con my_custom_error   : errors
+con my_custom_error_2 : errors = 7
+
+enum custom_errors : errors {
+	something,
+	another_thing
+}
+
+struct byte
+{
+	func convert:[dest_type type]() dest_type {
+		if dest_type == int {
+			new_int := int {}
+			new_int as unsafe byte = .
+			return new_int
+		} else {
+			throw error:new($"Cannot convert byte to {dest_type}.", errors.conversion_error)
+		}
+	}
+	
+	func add:(rhs) { // `add` turns into `+` operator. Can be called in either way.
+		switch typeof rhs {
+			case  byte:   return  byte   {}
+			case -byte:   return -byte   {}
+			case  word:   return  word   {}
+			case -word:   return -word   {}
+			case  long:   return  long   {}
+			case -long:   return -long   {}
+			case  dword:  return  dword  {}
+			case -dword:  return -dword  {}
+			case  qword:  return  qword  {}
+			case -qword:  return -qword  {}
+			case  float:  return  float  {}
+			case  double: return  double {}
+			
+			default:
+				if base_typename(typeof rhs) == "fixed" {
+					return (typeof rhs) {}
+				} else {
+					throw error:new($"Cannot perform addition on types: byte and {typeof rhs}.", errors.conversion_error)
+				}
+		}
+	}
+}

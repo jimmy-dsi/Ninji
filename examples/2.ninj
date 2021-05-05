@@ -1,0 +1,90 @@
+module containers
+
+con test_type = struct
+{
+	func some_func() bool
+	proc another_func() int
+}
+
+alias tt = test_type
+
+struct array(subtype type, size uint) : list
+{
+	tests {
+		(void, 2),
+		(byte, 0),
+		(string, 69),
+		(array(byte, 2), 3)
+	}
+	
+	con ::length = size ; Ninji equivalent of static variables. Accessed via array(byte, 2):length (the con before makes it constant)
+	::instances  = 0    ; Non-constant static variable
+	
+	::long_string_test =
+		"""This is:
+		  "   a,
+		  "   test,
+		  "   nice.
+		  "End."""
+	
+	repeat i in size {
+		_ subtype
+	}
+	
+	func ::static_method_test() {
+	}
+	
+	func count() int {
+		return size -> int
+	}
+	
+	oper func =[] (index) {
+		value_ptr_int := this as unsafe uint
+		value_ptr_int += index*sizeof(subtype)
+		
+		value_ptr := value_ptr_int as unsafe *subtype constrain this
+		// The "constrain" keyword asserts that the new unsafe pointer will always point to something inside the range of "this"
+		// If the assertion fails, an error will be thrown (either compiletime or runtime, depending on where this func is run)
+		// Without this "constrain", an unsafe conversion to a reference would not allow this to be a func and not be able to be executed at compiletime
+		// It would instead have to be a proc
+		
+		/* Test
+		comment */
+		
+		-- Test comment
+		
+		; Test comment
+		
+		"""Test
+		comment"""
+		
+		"""hksfg
+		fdshd"""
+		
+		return *value_ptr
+		
+	}
+	
+	oper proc []= (index, value) {
+		value_ptr := (this as unsafe uint) + index*sizeof(subtype) as unsafe *subtype
+		value_ptr <- value
+	}
+	
+	func append(value subtype) array(subtype, size+1) {
+		new_array := array(subtype, size+1) {}
+		
+		for i := $0,
+			i < size,
+			i += 0x1
+		{
+			new_array[i] = this[i]
+		}
+		
+		new_array[size] = value
+		
+		return new_array
+	}
+}
+
+func ghdjh() {
+}

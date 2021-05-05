@@ -1,0 +1,231 @@
+alias
+ nd
+ s
+cached
+  se
+  tch
+ on
+   strain
+default
+each
+ lse
+ num
+ val
+false
+ in
+   ally
+ or
+ unc
+get_argument
+            _count
+    generic
+           _count
+    member
+          _count
+if
+ mplement
+   ort
+ n
+  f
+  herit
+  terface
+ s
+let
+map
+ odule
+nan
+ ot
+   hing
+ ull
+oper
+ r
+proc
+repeat
+  turn
+select
+ izeof
+ truct
+ witch
+tests
+ his
+  row
+ rue
+  y
+ ypeof
+unsafe
+  til
+ ""
+  [^"] goto 50:2
+  \
+   [] goto 50:2
+var
+when
+ ith
+ ""
+  [^"] goto 53:2
+  \
+   [] goto 53:2
+   
+_
+ [A-Za-z_]+
+
+=
+ =
+  =
+ []
+:
+ =
++
+ =
+-
+ =
+ >
+*
+ =
+/
+ =
+%
+ =
+ [01]+
+&
+ =
+|
+ =
+^
+ =
+>
+ =
+ >
+  =
+<
+ =
+ -
+ <
+  =
+~
+!
+ =
+  =
+@
+#
+?
+.
+,
+(
+)
+[
+ ]=
+]
+{
+}
+
+0
+ [0-9]+
+       b
+       B
+       w
+       W
+       l
+       L
+       d
+       D
+       q
+       Q
+ b
+  [01]+
+ B
+ w
+ W
+ l
+ L
+ d
+ D
+ q
+ Q
+ x[0-9a-fA-F]+
+ .[0-9]+
+        f
+        F
+        d
+        D
+        x
+        X
+[1-9]
+     [0-9]+
+           .[0-9]+
+                  f
+                  F
+                  d
+                  D
+                  x
+                  X
+	       b
+           B
+           w
+           W
+           l
+           L
+           d
+           D
+           q
+           Q
+     .[0-9]+
+            f
+            F
+            d
+            D
+            x
+            X
+      b
+      B
+      w
+      W
+      l
+      L
+      d
+      D
+      q
+      Q
+$[0-9a-fA-F]+
+ ""
+  [^"] goto 184:2
+  \
+   [] goto 184:2
+  { goto 1:0 PUSH
+ w""
+   [^"] goto 189:3
+   \
+    [] goto 189:3
+   { goto 1:0 PUSH
+ u""
+   [^"] goto 194:3
+   \
+    [] goto 194:3
+   { goto 1:0 PUSH
+
+""
+ [^"] goto 200:1
+ \
+  [] goto 200:1
+  
+w""
+  [^"] goto 205:2
+  \
+   [] goto 205:2
+  
+u""
+  [^"] goto 210:2
+  \
+   [] goto 210:2
+  
+''
+ [^']'
+ \[]'
+  
+w''
+  [^']'
+  \[]'
+  
+u''
+  [^']'
+  \[]'

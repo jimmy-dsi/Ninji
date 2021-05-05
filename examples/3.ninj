@@ -1,0 +1,45 @@
+import other as o
+
+module main(version string, debug bool) ; Arguments to main are passed in as compiler flags
+tests {
+	("Version \"1.0.1\"", false), ; test
+	("Version 0.5.3", true)
+}
+
+struct object
+{
+	func deepcopy() thistype
+
+	func cmp(object) -byte
+	func hash()       uint
+	
+	oper func -> string {
+	}
+}
+
+proc main() {
+	return o("test", int).get_sauce(6)
+}
+
+; In other files
+
+module other(title_name string, T type)
+tests {
+	("Test title", int),
+	("", string)
+}
+
+struct title
+{
+	func get_title() {
+		return title_name
+	}
+}
+
+func get_sauce(mtype T) T {
+	if mtype is number {
+		return mtype + 1
+	} else {
+		return mtype
+	}
+}

@@ -1,0 +1,73 @@
+-some_type // Type negation. Only works for a select few types: byte, word, long, dword. Changes them to their signed equivalent.
+
+type_1 | type_2  // Untyped variant of type_1 and type_2
+type_1 ^ type_2  // Typed variant of type_1 and type_2
++type_1 | type_2 // Untyped variant of type_1 and type_2. The variant also includes `type_1`'s members directly, so not `as` conversion needed for any + prefixed types
++type_1 ^ type_2 // Typed variant of type_1 and type_2. The variant also includes `type_1`'s members directly, so not `as` conversion needed for any + prefixed types
+
+|base_type  // Untyped variant of base_type and all its derived types. However, base_type's members are included in the union itself. Essentially the same as `+base_type | derived_1 | derived_2 | ...`. Not sure where this one would be useful but hey it's here
+^base_type  // Typed variant of base_type and all its derived types. However, base_type's members are included in the union itself. Essentially the same as `+base_type ^ derived_1 ^ derived_2 ^ ...`
+?some_type  // Nullable `some_type`. Essentially the same as `some_type ^ nullable`.
+??some_type // Nullable `some_type` but untyped. Essentially the same as `+some_type | +nullable`. Useful if you can guarantee that the zero-value is invalid and you don't want to allocate an extra byte for the subtype.
+
+&base_type  // Reference to a base_type, and only a base_type
+*base_type  // Reference to a polymorphic base_type. Underlying value could be base_type or any of its derived types. Essentially the same as `&(+base_type | derived_1 | derived_2 | ...)`
+?&base_type // Nullable reference to a base_type, and only a base_type
+?*base_type // Nullable reference to a polymorphic base_type. Underlying value could be base_type or any of its derived types. Reference itself may also be null
+
+abstract_type  // A reference to a polymorphic abstract base type. Since it is abstract, this is always a reference. Equivalent to `*base_type`
+interface_type // A reference to an interface type. Since it is an interface and not a concrete type, this is always a reference. Equivalent to `*conrete_base_type`
+
+|abstract_type  // Untyped variant of abstract_type and all its derived types. Not recommended.
+|interface_type // Untyped variant of interface_type and everything that implements it. Not recommended.
+^abstract_type  // Typed variant of abstract_type and all its derived types. Not recommended.
+^interface_type // Typed variant of interface_type and everything that implements it. Not recommended.
+
+type_1 & type_2 // A type that must be of both type_1 and type_2. Typically, type_1 and type_2 would be interfaces or base structs, or else this requirement would never be fulfilled. type_1 and type_2 are also dereferenced and polymorphized.
+type_1 * type_2 // A type that must be of both type_1 and type_2. Typically, type_1 and type_2 would be interfaces or base structs, or else this requirement would never be fulfilled. Is a reference type.
+
+~some_type // Typed variant of every type that is not `some_type`. HIGHLY NOT RECOMMENDED.
+!some_type // Reference to typed variant of every type that is not `some_type`.
+
+(type_1, type_2, ...) // Tuple of types: `type_1`, `type_2`, etc.
+
+some_type*x      // Array of type `some_type` of size `x` where `x` is an integer
+some_type*x*y    // 2D-Array of type `some_type*x` of size `y` where `x` and `y` are integers
+some_type*(x, y) // 2D-Array of type `some_type*x` of size `y` where `x` and `y` are integers
+x*some_type      // Array of type `some_type` of size `x` where `x` is an integer
+x*y*some_type    // Array of type `some_type` of size `x*y` where `x` and `y` are integers
+(x, y)*some_type // 2D-Array of type `some_type*x` of size `y` where `x` and `y` are integers
+
+some_type[x]    // Array of type `some_type` of size `x` where `x` is an integer
+some_type[x][y] // 2D-Array of type `some_type[x]` of size `y` where `x` and `y` are integers
+some_type[x, y] // 2D-Array of type `some_type[x]` of size `y` where `x` and `y` are integers
+some_type[]     // Dynamic array of type `some_type`
+some_type[][]   // Dynamic 2D-array of type `some_type`
+
+How === and !== work:
+- If lhs and rhs are value-types:
+	- `lhs === rhs` is the same as `lhs.get_type() == rhs.get_type() and (lhs.raw_bytes().starts_with(rhs.raw_bytes()) or rhs.raw_bytes().starts_with(lhs.raw_bytes()))`
+- If lhs and rhs are reference-types:
+	- `lhs === rhs` is the same as `typeof lhs == typeof rhs and lhs.raw_bytes() == rhs.raw_bytes()`
+
+struct linked_list(subtype type)
+{
+	_size uint
+
+	_head ?*list_node
+	_tail ?*list_node
+	
+	
+	func size()
+	{
+		return _size
+	}
+}
+
+struct list_node(subtype type)
+{
+	_prev ?*list_node
+	_next ?*list_node
+	
+	value subtype
+}

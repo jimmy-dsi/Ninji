@@ -1,0 +1,87 @@
+func match_test(num int) {
+	return map num {
+		case 1:  "first"
+		case 2:  "second"
+		case 3:  "third"
+		case 4:  "fourth"
+		case 5:  "fifth"
+		case 6:  "sixth"
+		case 7:  "seventh"
+		case 8:  "eighth"
+		case 9:  "ninth"
+		case 10: "tenth"
+		default: null
+	}
+	// Will be inferred as type ?string (aka string|null)
+	// If not for the default null, would just be string
+}
+
+func switch_test(num int) {
+	switch num {
+		case 1:
+			return "first"
+		case 2:
+			return "second"
+		case 3:
+			return "third"
+		case 4:
+			return "fourth"
+		case 5:
+			return "fifth"
+		case 6:
+			return "sixth"
+		case 7:
+			return "seventh"
+		case 8:
+			return "eighth"
+		case 9:
+			return "ninth"
+		case 10:
+			return "tenth"
+		default:
+			return null
+	}
+}
+
+func ternary_test(num int) {
+	return when num == 3 select "three" else select "not three"
+}
+
+func multiple_ternary_test(num int) {
+	a := when num == 3 select "three" else when num == 6 select "six" else select "idk"
+	
+	b := (
+		when num == 3
+			select "three"
+		else when num == 6
+			select "six"
+		else
+			select "idk"
+	)
+	
+	c := (
+		when num == 3
+			select "three"
+		else
+			select "not three"
+	)
+	
+	return (
+		when a == "three"
+			select 4
+		else when a == "six"
+			select 7
+		else when a == "idk"
+			select 0
+		else
+			select null
+	)
+}
+
+con a ^object = eval {
+	sum := 0
+	for i := 0, i < 10, i += 1 {
+		sum += i
+	}
+	return sum
+}

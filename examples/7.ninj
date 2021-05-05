@@ -1,0 +1,127 @@
+ // `*` indicates that it is abstract
+struct *string
+{
+	
+}
+
+struct array(subtype type, size ?uint = null)
+{
+	if subtype == char {
+		inherit string
+	}
+	
+	implement list
+	implement (test1, test2) 
+}
+
+struct ustring : string
+{
+}
+
+struct wstring : string
+{
+}
+
+alias cstring = array(char)
+
+
+proc _some_proc(num *int) {
+	if num == 3 or some_const == 6 \ and num % 2 == 0 {
+		a := some_module \ .some_object + 1 \ .some_method() // Equivalent to `a := ((some_module).some_object + 1).some_method()`
+		return num->(*my_module.my_int).hi.lo
+	} else {
+		return 4922w \ .lo + num \ * 6
+	}
+}
+
+proc some_other_proc(num *int) {
+	switch num.get_type() {
+		case my_int_1:
+			return num as (*my_int_1).my_int_1_method()
+		case my_int_2:
+			return num as (*my_int_2).my_int_2_method()
+		case my_int_3:
+			return num.lo + num as (*my_int_3).my_int_3_method()
+		default:
+			return num.hi
+	}
+}
+
+proc third_proc(obj abstract_type) {
+	if obj.get_type() is derived_type_1 {
+		return obj as *derived_type_1 \.derived_method_1()
+	} else if obj.get_type() is derived_type_2 {
+		return obj as *derived_type_2 \.derived_method_2()
+	} else if obj.get_type() is derived_type_3 {
+		switch obj.get_type() {
+			case derived_type_3_1:
+				return obj as *derived_type_3_1 \.derived_method_3_1()
+			case derived_type_3_2:
+				return obj as *derived_type_3_2 \.derived_method_3_2()
+		}
+	}
+	
+	return null
+}
+
+proc fourth_proc(obj *base_type) {
+	a := *base_type as derived_type
+	return a
+	
+	nani.the.fuck + ..nani
+	
+	_djfkj.jkgh
+	fgkjf.hjfghj._fhdjghf.dghj
+	.something.gffg
+	
+	this.something
+}
+
+func parse_int(s string) int {
+	s->int->string->int
+}
+
+// Generic functions (Functions with typeless parameters)
+func byte add:(rhs) {
+	tests {
+		(byte),
+		(word),
+	}
+
+	if typeof rhs == byte {
+		return 0b
+	} else if typeof rhs == word {
+		return 0w
+	}
+}
+
+// or:
+func byte add:[subtype type](rhs subtype) {
+	tests {
+		(byte),
+		(word),
+	}
+
+	if subtype == byte {
+		return 0b
+	} else if subtype == word {
+		return 0w
+	}
+}
+
+a := 3b
+b := -6b
+c := a.add:(b)
+// or:
+a := 3b
+b := -6b
+c := a.add:[byte](b)
+
+// Getting the underlying function
+some_func := byte:add:[byte]
+some_func := byte:add // Error (Since `add` itself is not a function.)
+a := "12"->int 
+b := "12.6"->float
+
+print(typeof a) // int
+print(typeof b) // float

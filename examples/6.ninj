@@ -1,0 +1,45 @@
+struct test
+{
+	var1 byte
+	var2 long
+	
+	_var3_private bool
+	_var4_private int
+	
+	func method_1(letter char) {
+		if letter >= 'a' and letter <= 'z' {
+			return 1
+		} else if letter == '\'' {
+			return 2
+		} else if letter == '"' {
+			return 3
+		} else {
+			return 4
+		}
+	}
+	
+	proc method_2() {
+		return ```C
+			result = `var1` + `var2`; // dsgsfg 
+			/*
+			 * lol
+			*/
+			result++;
+		```
+	}
+	
+	proc :static_method() {
+		
+	}
+	
+	func _method_3() {
+	}
+	
+	proc _method_4() {
+		return this._var3_private + this.var1
+	}
+	
+	proc :_static_method_2() {
+		
+	}
+}

@@ -1,0 +1,25 @@
+func exception_test() {
+	try {
+		a := 3
+		b := 0
+		
+		c := a.divide_by(b)
+		
+		debug_print($"result = {(c)}")
+	} catch e error {
+		debug_print(e)
+	} finally {
+		debug_print("Finished!")
+	}
+}
+
+func *int divide_by(rhs int) {
+	if rhs == 0 {
+		throw error {} init(
+			message = "Division by zero.",
+			type    = "DVDB0"
+		)
+	} else {
+		return this / rhs
+	}
+}

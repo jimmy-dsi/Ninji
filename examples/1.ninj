@@ -1,0 +1,63 @@
+module main
+
+import sys as . 
+; ^ Put everything from sys into the main namespace
+import os  as o
+
+import my_module
+
+tests {
+}
+
+struct uint
+{
+	fin lo word ; fin = The Ninji equivalent of C#'s readonly
+	fin hi word ; fin = The Ninji equivalent of C#'s readonly
+
+	func test(a uint) bool {
+		return true
+	}
+}
+
+con b = 3
+
+proc main() {
+	let a byte = 6
+	
+	if a == 2 and b == 3 {
+		with uint{} {
+			this.lo = a ; This is erroneous because lo and hi are "fin" (final)
+			.hi = b     ; This is erroneous because lo and hi are "fin" (final)
+			
+			c := lo + hi
+		}
+	}
+	
+	let new_uint = uint {
+		lo: $6A,
+		hi: $07
+	}
+	// or:
+	new_uint_2 := uint
+	{
+		lo: $42,
+		hi: $BC
+	}
+	
+	// Below is simply a scoped block with no conditional.
+	do {
+		x := 27 // `x` exists here
+	}
+	// But not here
+	
+	// Ninji's version of do-while:
+	y := 1
+	do {
+		y *= 2
+	} until y >= 17 // Adding until turns `do` block into a loop
+	
+	// Same as:
+	for y := 1, y < 17, y *= 2
+	{
+	}
+}
