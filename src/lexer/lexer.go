@@ -100,30 +100,16 @@ func (this *Lexer) Lex() [] Token {
 				this.Column++
 			}
 		}
-		tokens = append(
-			tokens,
-			Token {
-				ID:       "line end",
-				RawValue: []byte("\n"),
-				Value:    "\\n",
-
-				FilePath: tempToken.FilePath,
-				Line:     tempToken.Line,
-				Column:   tempToken.Column,
-
-				Error: false,
-			},
-		)
 	}
 
-	consolidateInvalidCharacters := func() {
+	consolidateUnicodeCharacters := func() {
 		for i := 0; i < len(tokens); i++ {
 			token := tokens[i]
 
 			if len(finalTokens) > 0 {
 				prevToken := finalTokens[len(finalTokens) - 1]
 
-				if token.ID == "invalid character" && prevToken.ID == "invalid character" && token.Line == prevToken.Line && token.Column == prevToken.Column {
+				if token.ID == prevToken.ID && token.Line == prevToken.Line && token.Column == prevToken.Column {
 					finalTokens[len(finalTokens) - 1].Value    = finalTokens[len(finalTokens) - 1].Value.(string) + token.Value.(string)
 					finalTokens[len(finalTokens) - 1].RawValue = []byte(finalTokens[len(finalTokens) - 1].Value.(string))
 				} else {
@@ -145,7 +131,7 @@ func (this *Lexer) Lex() [] Token {
 	//}
 
 	tokenize()
-	consolidateInvalidCharacters()
+	consolidateUnicodeCharacters()
 	//condenseLineEnds()
 
 	return finalTokens
@@ -172,9 +158,11 @@ const (
 	AcceptQWord           = iota
 	AcceptOperator        = iota
 
-	AcceptCString         = iota
-	AcceptWString         = iota
-	AcceptUString         = iota
+	AcceptCStringStart    = iota
+	AcceptWStringStart    = iota
+	AcceptUStringStart    = iota
+	AcceptStringChar      = iota
+	AcceptStringEnd       = iota
 
 	AcceptChar            = iota
 	AcceptWChar           = iota
@@ -183,8 +171,15 @@ const (
 	RejectLiteral         = iota
 	RejectNumber          = iota
 	RejectCharacter       = iota
+	RejectStringChar      = iota
+	RejectStringEnd       = iota
  
 	InvalidReadNumber     = iota
+	InvalidReadString     = iota
+	InvalidReadBackslashU1= iota
+	InvalidReadBackslashU2= iota
+	InvalidReadBackslashU3= iota
+	InvalidReadBackslashX1= iota
  
 	ReadWhitespace        = iota
 	ReadComment           = iota
@@ -192,7 +187,7 @@ const (
 	ReadMultiLineComment2 = iota
 
 	ReadIdent             = iota
-
+	
 	ReadString            = iota
 	ReadStringBackslash   = iota
 	ReadStringBackslashX  = iota
@@ -759,6 +754,102 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			this.StateID = Start
 			result = true
 
+		case AcceptCStringStart:
+			return_token = Token {
+				ID:       "c-string start",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = ReadString
+			result = true
+
+		case AcceptStringChar:
+			value := string(tempToken.RawValue)
+			if value[0] == '\\' {
+				if value[1] == 'x' {
+					x, _ := strconv.ParseUint(value[2:], 16, 8)
+					value = string(byte(x))
+				} else if value[1] == 'u' {
+					u, _ := strconv.ParseUint(value[2:], 16, 32)
+					value = string(rune(u))
+				} else {
+					switch value[1] {
+						case '"':  value = "\""
+						case '\\': value = "\\"
+						case 'b':  value = "\b"
+						case 'f':  value = "\f"
+						case 'n':  value = "\n"
+						case 'r':  value = "\r"
+						case 't':  value = "\t"
+					}
+				}
+			}
+
+			return_token = Token {
+				ID:       "string character",
+				RawValue: tempToken.RawValue,
+				Value:    value,
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = ReadString
+			result = true
+
+		case AcceptStringEnd:
+			return_token = Token {
+				ID:       "string end",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
+			result = true
+
+		case RejectStringChar:
+			return_token = Token {
+				ID:       "invalid string character",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: true,
+			}
+			this.StateID = ReadString
+			result = true
+
+		case RejectStringEnd:
+			return_token = Token {
+				ID:       "line end in string literal",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: true,
+			}
+			this.StateID = Start
+			result = true
+
 		case RejectNumber:
 			return_token = Token {
 				ID:       "invalid number literal",
@@ -930,6 +1021,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = AcceptOperator
 			} else if thisChar == '\\' {
 				this.StateID = AcceptOperator
+			} else if thisChar == '"' {
+				this.StateID = AcceptCStringStart
 			} else if thisChar == ';' && (nextChar == '\r' || nextChar == '\n') {
 				this.StateID = AcceptComment
 			} else if thisChar == ';' {
@@ -968,6 +1061,120 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if !IsIdentChar(nextChar) {
 				this.StateID = AcceptIdent
 			}
+
+		case ReadString:
+			*tempToken = Token {
+				ID:       "unknown",
+				RawValue: [] byte {},
+				Value:    "",
+
+				FilePath: this.FilePath,
+				Line:     this.Line,
+				Column:   this.Column,
+
+				Error: false,
+			}
+
+			if thisChar == '\n' {
+				this.StateID = RejectStringEnd
+			} else if thisChar == '\r' {
+				this.StateID = RejectStringChar
+			} else if thisChar == '"' {
+				this.StateID = AcceptStringEnd
+			} else if thisChar == '\\' && nextChar != '\r' && nextChar != '\n' {
+				this.StateID = ReadStringBackslash
+			} else if thisChar == '\\' {
+				this.StateID = RejectStringChar
+			} else {
+				this.StateID = AcceptStringChar
+			}
+
+		case ReadStringBackslash:
+			if thisChar == 'u' && (nextChar == '\r' || nextChar == '\n' || nextChar == '"') {
+				this.StateID = RejectStringChar
+			} else if thisChar == 'u' {
+				this.StateID = ReadStringBackslashU
+			} else if thisChar == 'x' && (nextChar == '\r' || nextChar == '\n' || nextChar == '"') {
+				this.StateID = RejectStringChar
+			} else if thisChar == 'x' {
+				this.StateID = ReadStringBackslashX
+			} else if thisChar == '\n' {
+				this.StateID = RejectStringEnd
+			} else if thisChar != 'b' && thisChar != 'f' && thisChar != 'n' && thisChar != 'r' && thisChar != 't' && thisChar != '\\' && thisChar != '"' {
+				this.StateID = RejectStringChar
+			} else {
+				this.StateID = AcceptStringChar
+			}
+
+		case ReadStringBackslashU:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadStringBackslashU1
+			} else {
+				this.StateID = InvalidReadBackslashU1
+			}
+
+		case ReadStringBackslashU1:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadStringBackslashU2
+			} else {
+				this.StateID = InvalidReadBackslashU2
+			}
+
+		case ReadStringBackslashU2:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadStringBackslashU3
+			} else {
+				this.StateID = InvalidReadBackslashU3
+			}
+
+		case ReadStringBackslashU3:
+			if IsHexChar(thisChar) {
+				this.StateID = AcceptStringChar
+			} else {
+				this.StateID = RejectStringChar
+			}
+
+		case InvalidReadBackslashU1:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else {
+				this.StateID = InvalidReadBackslashU2
+			}
+
+		case InvalidReadBackslashU2:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else {
+				this.StateID = InvalidReadBackslashU3
+			}
+
+		case InvalidReadBackslashU3:
+			this.StateID = RejectStringChar
+
+		case ReadStringBackslashX:
+			if nextChar == '\r' || nextChar == '\n' || nextChar == '"' {
+				this.StateID = RejectStringChar
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadStringBackslashX1
+			} else {
+				this.StateID = InvalidReadBackslashX1
+			}
+
+		case ReadStringBackslashX1:
+			if IsHexChar(thisChar) {
+				this.StateID = AcceptStringChar
+			} else {
+				this.StateID = RejectStringChar
+			}
+
+		case InvalidReadBackslashX1:
+			this.StateID = RejectStringChar
 
 		case ReadSlash:
 			if thisChar == '=' {

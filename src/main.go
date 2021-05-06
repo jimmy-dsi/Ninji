@@ -8,8 +8,10 @@ import (
 func main() {
 	fmt.Println("Hello!")
 
+	fmt.Println("Lexing...")
 	lexer := Lexer{}.Init("..\\tests\\1.ninj")
 	tokens := lexer.Lex()
+	fmt.Println("Done Lexing!")
 
 	fmt.Println(fmt.Sprint(len(tokens)))
 

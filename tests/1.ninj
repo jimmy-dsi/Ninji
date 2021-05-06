@@ -201,9 +201,6 @@ inherit implement
 in inf inh inhe inher inheri inherit_
 i im imp impl imple implem impleme implemen implement_
 
-ありがとうございます、岡山 a 😂😂
-dafg /* 何に？？？ */ 2
-
 Outer:
 for each v, i in array1 {
 	Inner:
@@ -221,3 +218,34 @@ cons const constr constra constrai constrain constrain_
 b br bre brea break break_ break2
 
 e en enu enum enum_ \ \\
+
+"" "test string"
+"\"" "\t\\\"\b\r\n\f"
+"\x4A\xcd\x55" "\u0010\uDAb7-\u4eDd"
+
+"
+"a
+"dskjfgsd
+
+"\"
+"\
+"\xgyhte" "\u7dshn"
+"\x" "\x
+"\u" "\u
+"\x1" "\x1
+"\u1" "\u1
+"\u1C" "\u1C
+"\u1Cf" "\u1Cf
+"\xG" "\xG
+"\uH" "\uH
+"\uHz" "\uHz
+"\uHz\" "\uHz\
+"\u1H" "\u1H
+"\u1Hq" "\u1Hq
+"\u1Fq" "\u1Cq
+
+"\afhdfjs\%"
+"aッっb"
+
+ありがとうございます、岡山 a 😂😂
+dafg /* 何に？？？ */ 2
