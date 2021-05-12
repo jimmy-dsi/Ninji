@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"unicode/utf8"
 	"fmt"
 	"strconv"
 	"strings"
@@ -35,7 +36,7 @@ func (this Lexer) Init(filePath string) Lexer {
 	if err == nil {
 		return Lexer {
 			FilePath: filePath,
-			FileData: string(fileData) + "\r\n",
+			FileData: string(fileData) + "\n\n",
 
 			Line:     1,
 			Column:   1,
@@ -56,10 +57,10 @@ func (this *Lexer) Lex() [] Token {
 		utf8_counter := 0
 
 		for i := 0; i < len(this.FileData); i++ {
-			c    := byte(0)
-			cc   := byte(0)
-			ccc  := byte(0)
-			cccc := byte(0)
+			var c    byte = '\n'
+			var cc   byte = '\n'
+			var ccc  byte = '\n'
+			var cccc byte = '\n'
 	
 			if i < len(this.FileData) {
 				c = this.FileData[i]
@@ -139,297 +140,314 @@ func (this *Lexer) Lex() [] Token {
 }
 
 const (
-	Start                 = iota
-	AcceptWhiteSpace      = iota
-	AcceptComment         = iota
-	AcceptLineEnd         = iota
-
-	AcceptIdent           = iota
-	AcceptKeyword         = iota
-	AcceptInteger         = iota
-	AcceptDecimal         = iota
-	AcceptFloat           = iota
-	AcceptDouble          = iota
-	AcceptFixed           = iota
-	AcceptByte            = iota
-	AcceptWord            = iota
-	AcceptLong            = iota
-	AcceptDWord           = iota
-	AcceptQWord           = iota
-	AcceptOperator        = iota
-
-	AcceptCStringStart    = iota
-	AcceptWStringStart    = iota
-	AcceptUStringStart    = iota
-	AcceptStringChar      = iota
-	AcceptStringEnd       = iota
-
-	AcceptChar            = iota
-	AcceptWChar           = iota
-	AcceptUChar           = iota
- 
-	RejectLiteral         = iota
-	RejectNumber          = iota
-	RejectCharacter       = iota
-	RejectStringChar      = iota
-	RejectStringEnd       = iota
- 
-	InvalidReadNumber     = iota
-	InvalidReadString     = iota
-	InvalidReadBackslashU1= iota
-	InvalidReadBackslashU2= iota
-	InvalidReadBackslashU3= iota
-	InvalidReadBackslashX1= iota
- 
-	ReadWhitespace        = iota
-	ReadComment           = iota
-	ReadMultiLineComment  = iota
-	ReadMultiLineComment2 = iota
-
-	ReadIdent             = iota
+	Start                      = iota
+	AcceptWhiteSpace           = iota
+	AcceptComment              = iota
+	AcceptLineEnd              = iota
+     
+	AcceptIdent                = iota
+	AcceptKeyword              = iota
+	AcceptInteger              = iota
+	AcceptDecimal              = iota
+	AcceptFloat                = iota
+	AcceptDouble               = iota
+	AcceptFixed                = iota
+	AcceptByte                 = iota
+	AcceptWord                 = iota
+	AcceptLong                 = iota
+	AcceptDWord                = iota
+	AcceptQWord                = iota
+	AcceptOperator             = iota
+     
+	AcceptCStringStart         = iota
+	AcceptWStringPrefix        = iota
+	AcceptUStringPrefix        = iota
+	AcceptStringChar           = iota
+	AcceptStringEnd            = iota
+     
+	AcceptChar                 = iota
+	AcceptUCharPrefix          = iota
+	AcceptWCharPrefix          = iota
+     
+	RejectChar                 = iota
+      
+	RejectLiteral              = iota
+	RejectNumber               = iota
+	RejectCharacter            = iota
+	RejectStringChar           = iota
+	RejectStringEnd            = iota
+      
+	InvalidReadNumber          = iota
+	    
+	InvalidReadString          = iota
+	InvalidReadBackslashU1     = iota
+	InvalidReadBackslashU2     = iota
+	InvalidReadBackslashU3     = iota
+	InvalidReadBackslashX1     = iota
 	
-	ReadString            = iota
-	ReadStringBackslash   = iota
-	ReadStringBackslashX  = iota
-	ReadStringBackslashX1 = iota
-	ReadStringBackslashU  = iota
-	ReadStringBackslashU1 = iota
-	ReadStringBackslashU2 = iota
-	ReadStringBackslashU3 = iota
- 
-	ReadDot1              = iota
-	ReadDot2              = iota
-	ReadEquals1           = iota
-	ReadEquals2           = iota
-	ReadColon             = iota
-	ReadPlus              = iota
-	ReadMinus             = iota
-	ReadStar              = iota
-	ReadSlash             = iota
-	ReadPercent           = iota
-	ReadAmp               = iota
-	ReadPipe              = iota
-	ReadCaret             = iota
-	ReadGreaterThan       = iota
-	ReadShiftRight        = iota
-	ReadLessThan          = iota
-	ReadShiftLeft         = iota
-	ReadBang              = iota
-	ReadBangEquals        = iota
-
-	ReadNumberZero        = iota
-	ReadNumberDigit       = iota
-	ReadBinaryDigit       = iota
-	ReadHexDigit          = iota
-	ReadDecimalDigit      = iota
- 
-	ReadDollarSign        = iota
- 
-	ReadHexDigit1         = iota
-	ReadHexDigit2         = iota
-	ReadHexDigit3         = iota
-	ReadHexDigit4         = iota
-	ReadHexDigit5         = iota
-	ReadHexDigit6         = iota
-	ReadHexDigit7         = iota
-	ReadHexDigit8         = iota
-	ReadHexDigitQ         = iota
- 
-	ReadBinaryDigit0      = iota
- 
-	ReadBinaryDigit1      = iota
-	ReadBinaryDigit2      = iota
-	ReadBinaryDigit3      = iota
-	ReadBinaryDigit4      = iota
-	ReadBinaryDigit5      = iota
-	ReadBinaryDigit6      = iota
-	ReadBinaryDigit7      = iota
-	ReadBinaryDigit8      = iota
- 
-	ReadBinaryDigit9      = iota
-	ReadBinaryDigit10     = iota
-	ReadBinaryDigit11     = iota
-	ReadBinaryDigit12     = iota
-	ReadBinaryDigit13     = iota
-	ReadBinaryDigit14     = iota
-	ReadBinaryDigit15     = iota
-	ReadBinaryDigit16     = iota
- 
-	ReadBinaryDigit17     = iota
-	ReadBinaryDigit18     = iota
-	ReadBinaryDigit19     = iota
-	ReadBinaryDigit20     = iota
-	ReadBinaryDigit21     = iota
-	ReadBinaryDigit22     = iota
-	ReadBinaryDigit23     = iota
-	ReadBinaryDigit24     = iota
- 
-	ReadBinaryDigit25     = iota
-	ReadBinaryDigit26     = iota
-	ReadBinaryDigit27     = iota
-	ReadBinaryDigit28     = iota
-	ReadBinaryDigit29     = iota
-	ReadBinaryDigit30     = iota
-	ReadBinaryDigit31     = iota
-	ReadBinaryDigit32     = iota
- 
-	ReadBinaryDigitQ      = iota
- 
-	ReadKeywordsA         = iota
-	ReadKeywordsAL        = iota
-	ReadKeywordsALI       = iota
-	ReadKeywordsALIA      = iota
-	ReadKeywordsAN        = iota
-	ReadKeywordsB         = iota
-	ReadKeywordsBR        = iota
-	ReadKeywordsBRE       = iota
-	ReadKeywordsBREA      = iota
-	ReadKeywordsC         = iota
-	ReadKeywordsCA        = iota
-	ReadKeywordsCAC       = iota
-	ReadKeywordsCACH      = iota
-	ReadKeywordsCACHE     = iota
-	ReadKeywordsCAS       = iota
-	ReadKeywordsCAT       = iota
-	ReadKeywordsCATC      = iota
-	ReadKeywordsCO        = iota
-	ReadKeywordsCON       = iota
-	ReadKeywordsCONS      = iota
-	ReadKeywordsCONST     = iota
-	ReadKeywordsCONSTR    = iota
-	ReadKeywordsCONSTRA   = iota
-	ReadKeywordsCONSTRAI  = iota
-	ReadKeywordsCONT      = iota
-	ReadKeywordsCONTI     = iota
-	ReadKeywordsCONTIN    = iota
-	ReadKeywordsCONTINU   = iota
-	ReadKeywordsD         = iota
-	ReadKeywordsDE        = iota
-	ReadKeywordsDEF       = iota
-	ReadKeywordsDEFA      = iota
-	ReadKeywordsDEFAU     = iota
-	ReadKeywordsDEFAUL    = iota
-	ReadKeywordsE         = iota
-	ReadKeywordsEA        = iota
-	ReadKeywordsEAC       = iota
-	ReadKeywordsEL        = iota
-	ReadKeywordsELS       = iota
-	ReadKeywordsEN        = iota
-	ReadKeywordsENU       = iota
-	ReadKeywordsEV        = iota
-	ReadKeywordsEVA       = iota
-	ReadKeywordsF         = iota
-	ReadKeywordsFA        = iota
-	ReadKeywordsFAL       = iota
-	ReadKeywordsFALS      = iota
-	ReadKeywordsFI        = iota
-	ReadKeywordsFIN       = iota
-	ReadKeywordsFINA      = iota
-	ReadKeywordsFINAL     = iota
-	ReadKeywordsFINALL    = iota
-	ReadKeywordsFO        = iota
-	ReadKeywordsFU        = iota
-	ReadKeywordsFUN       = iota
-	ReadKeywordsG         = iota
-	ReadKeywordsI         = iota
-	ReadKeywordsIM        = iota
-	ReadKeywordsIMP       = iota
-	ReadKeywordsIMPL      = iota
-	ReadKeywordsIMPLE     = iota
-	ReadKeywordsIMPLEM    = iota
-	ReadKeywordsIMPLEME   = iota
-	ReadKeywordsIMPLEMEN  = iota
-	ReadKeywordsIMPO      = iota
-	ReadKeywordsIMPOR     = iota
-	ReadKeywordsIN        = iota
-	ReadKeywordsINH       = iota
-	ReadKeywordsINHE      = iota
-	ReadKeywordsINHER     = iota
-	ReadKeywordsINHERI    = iota
-	ReadKeywordsINT       = iota
-	ReadKeywordsINTE      = iota
-	ReadKeywordsINTER     = iota
-	ReadKeywordsINTERF    = iota
-	ReadKeywordsINTERFA   = iota
-	ReadKeywordsINTERFAC  = iota
-	ReadKeywordsL         = iota
-	ReadKeywordsLE        = iota
-	ReadKeywordsM         = iota
-	ReadKeywordsMA        = iota
-	ReadKeywordsMO        = iota
-	ReadKeywordsMOD       = iota
-	ReadKeywordsMODU      = iota
-	ReadKeywordsMODUL     = iota
-	ReadKeywordsN         = iota
-	ReadKeywordsNA        = iota
-	ReadKeywordsNO        = iota
-	ReadKeywordsNOT       = iota
-	ReadKeywordsNOTH      = iota
-	ReadKeywordsNOTHI     = iota
-	ReadKeywordsNOTHIN    = iota
-	ReadKeywordsNU        = iota
-	ReadKeywordsNUL       = iota
-	ReadKeywordsO         = iota
-	ReadKeywordsOP        = iota
-	ReadKeywordsOPE       = iota
-	ReadKeywordsP         = iota
-	ReadKeywordsPR        = iota
-	ReadKeywordsPRO       = iota
-	ReadKeywordsR         = iota
-	ReadKeywordsRE        = iota
-	ReadKeywordsREP       = iota
-	ReadKeywordsREPE      = iota
-	ReadKeywordsREPEA     = iota
-	ReadKeywordsRET       = iota
-	ReadKeywordsRETU      = iota
-	ReadKeywordsRETUR     = iota
-	ReadKeywordsS         = iota
-	ReadKeywordsSE        = iota
-	ReadKeywordsSEL       = iota
-	ReadKeywordsSELE      = iota
-	ReadKeywordsSELEC     = iota
-	ReadKeywordsSI        = iota
-	ReadKeywordsSIZ       = iota
-	ReadKeywordsSIZE      = iota
-	ReadKeywordsSIZEO     = iota
-	ReadKeywordsST        = iota
-	ReadKeywordsSTR       = iota
-	ReadKeywordsSTRU      = iota
-	ReadKeywordsSTRUC     = iota
-	ReadKeywordsSW        = iota
-	ReadKeywordsSWI       = iota
-	ReadKeywordsSWIT      = iota
-	ReadKeywordsSWITC     = iota
-	ReadKeywordsT         = iota
-	ReadKeywordsTE        = iota
-	ReadKeywordsTES       = iota
-	ReadKeywordsTEST      = iota
-	ReadKeywordsTH        = iota
-	ReadKeywordsTHI       = iota
-	ReadKeywordsTHR       = iota
-	ReadKeywordsTHRO      = iota
-	ReadKeywordsTR        = iota
-	ReadKeywordsTRU       = iota
-	ReadKeywordsTY        = iota
-	ReadKeywordsTYP       = iota
-	ReadKeywordsTYPE      = iota
-	ReadKeywordsTYPEO     = iota
-	ReadKeywordsU         = iota
-	ReadKeywordsUN        = iota
-	ReadKeywordsUNS       = iota
-	ReadKeywordsUNSA      = iota
-	ReadKeywordsUNSAF     = iota
-	ReadKeywordsUNT       = iota
-	ReadKeywordsUNTI      = iota
-	ReadKeywordsV         = iota
-	ReadKeywordsVA        = iota
-	ReadKeywordsW         = iota
-	ReadKeywordsWH        = iota
-	ReadKeywordsWHE       = iota
-	ReadKeywordsWI        = iota
-	ReadKeywordsWIT       = iota
-	ReadKeywordsX         = iota
-	ReadKeywordsXO        = iota
+	InvalidReadChar            = iota
+  
+	ReadWhitespace             = iota
+	ReadComment                = iota
+	ReadMultiLineComment       = iota
+	ReadMultiLineComment2      = iota
+     
+	ReadIdent                  = iota
+	     
+	ReadString                 = iota
+	ReadStringBackslash        = iota
+	ReadStringBackslashX       = iota
+	ReadStringBackslashX1      = iota
+	ReadStringBackslashU       = iota
+	ReadStringBackslashU1      = iota
+	ReadStringBackslashU2      = iota
+	ReadStringBackslashU3      = iota
+	     
+	ReadChar                   = iota
+	ReadCharFinal              = iota
+	ReadCharBackslash          = iota
+	ReadCharBackslashX         = iota
+	ReadCharBackslashX1        = iota
+	ReadCharBackslashU         = iota
+	ReadCharBackslashU1        = iota
+	ReadCharBackslashU2        = iota
+	ReadCharBackslashU3        = iota
+      
+	ReadDot1                   = iota
+	ReadDot2                   = iota
+	ReadEquals1                = iota
+	ReadEquals2                = iota
+	ReadColon                  = iota
+	ReadPlus                   = iota
+	ReadMinus                  = iota
+	ReadStar                   = iota
+	ReadSlash                  = iota
+	ReadPercent                = iota
+	ReadAmp                    = iota
+	ReadPipe                   = iota
+	ReadCaret                  = iota
+	ReadGreaterThan            = iota
+	ReadShiftRight             = iota
+	ReadLessThan               = iota
+	ReadShiftLeft              = iota
+	ReadBang                   = iota
+	ReadBangEquals             = iota
+     
+	ReadNumberZero             = iota
+	ReadNumberDigit            = iota
+	ReadBinaryDigit            = iota
+	ReadHexDigit               = iota
+	ReadDecimalDigit           = iota
+      
+	ReadDollarSign             = iota
+      
+	ReadHexDigit1              = iota
+	ReadHexDigit2              = iota
+	ReadHexDigit3              = iota
+	ReadHexDigit4              = iota
+	ReadHexDigit5              = iota
+	ReadHexDigit6              = iota
+	ReadHexDigit7              = iota
+	ReadHexDigit8              = iota
+	ReadHexDigitQ              = iota
+      
+	ReadBinaryDigit0           = iota
+      
+	ReadBinaryDigit1           = iota
+	ReadBinaryDigit2           = iota
+	ReadBinaryDigit3           = iota
+	ReadBinaryDigit4           = iota
+	ReadBinaryDigit5           = iota
+	ReadBinaryDigit6           = iota
+	ReadBinaryDigit7           = iota
+	ReadBinaryDigit8           = iota
+      
+	ReadBinaryDigit9           = iota
+	ReadBinaryDigit10          = iota
+	ReadBinaryDigit11          = iota
+	ReadBinaryDigit12          = iota
+	ReadBinaryDigit13          = iota
+	ReadBinaryDigit14          = iota
+	ReadBinaryDigit15          = iota
+	ReadBinaryDigit16          = iota
+      
+	ReadBinaryDigit17          = iota
+	ReadBinaryDigit18          = iota
+	ReadBinaryDigit19          = iota
+	ReadBinaryDigit20          = iota
+	ReadBinaryDigit21          = iota
+	ReadBinaryDigit22          = iota
+	ReadBinaryDigit23          = iota
+	ReadBinaryDigit24          = iota
+      
+	ReadBinaryDigit25          = iota
+	ReadBinaryDigit26          = iota
+	ReadBinaryDigit27          = iota
+	ReadBinaryDigit28          = iota
+	ReadBinaryDigit29          = iota
+	ReadBinaryDigit30          = iota
+	ReadBinaryDigit31          = iota
+	ReadBinaryDigit32          = iota
+      
+	ReadBinaryDigitQ           = iota
+      
+	ReadKeywordsA              = iota
+	ReadKeywordsAL             = iota
+	ReadKeywordsALI            = iota
+	ReadKeywordsALIA           = iota
+	ReadKeywordsAN             = iota
+	ReadKeywordsB              = iota
+	ReadKeywordsBR             = iota
+	ReadKeywordsBRE            = iota
+	ReadKeywordsBREA           = iota
+	ReadKeywordsC              = iota
+	ReadKeywordsCA             = iota
+	ReadKeywordsCAC            = iota
+	ReadKeywordsCACH           = iota
+	ReadKeywordsCACHE          = iota
+	ReadKeywordsCAS            = iota
+	ReadKeywordsCAT            = iota
+	ReadKeywordsCATC           = iota
+	ReadKeywordsCO             = iota
+	ReadKeywordsCON            = iota
+	ReadKeywordsCONS           = iota
+	ReadKeywordsCONST          = iota
+	ReadKeywordsCONSTR         = iota
+	ReadKeywordsCONSTRA        = iota
+	ReadKeywordsCONSTRAI       = iota
+	ReadKeywordsCONT           = iota
+	ReadKeywordsCONTI          = iota
+	ReadKeywordsCONTIN         = iota
+	ReadKeywordsCONTINU        = iota
+	ReadKeywordsD              = iota
+	ReadKeywordsDE             = iota
+	ReadKeywordsDEF            = iota
+	ReadKeywordsDEFA           = iota
+	ReadKeywordsDEFAU          = iota
+	ReadKeywordsDEFAUL         = iota
+	ReadKeywordsE              = iota
+	ReadKeywordsEA             = iota
+	ReadKeywordsEAC            = iota
+	ReadKeywordsEL             = iota
+	ReadKeywordsELS            = iota
+	ReadKeywordsEN             = iota
+	ReadKeywordsENU            = iota
+	ReadKeywordsEV             = iota
+	ReadKeywordsEVA            = iota
+	ReadKeywordsF              = iota
+	ReadKeywordsFA             = iota
+	ReadKeywordsFAL            = iota
+	ReadKeywordsFALS           = iota
+	ReadKeywordsFI             = iota
+	ReadKeywordsFIN            = iota
+	ReadKeywordsFINA           = iota
+	ReadKeywordsFINAL          = iota
+	ReadKeywordsFINALL         = iota
+	ReadKeywordsFO             = iota
+	ReadKeywordsFU             = iota
+	ReadKeywordsFUN            = iota
+	ReadKeywordsG              = iota
+	ReadKeywordsI              = iota
+	ReadKeywordsIM             = iota
+	ReadKeywordsIMP            = iota
+	ReadKeywordsIMPL           = iota
+	ReadKeywordsIMPLE          = iota
+	ReadKeywordsIMPLEM         = iota
+	ReadKeywordsIMPLEME        = iota
+	ReadKeywordsIMPLEMEN       = iota
+	ReadKeywordsIMPO           = iota
+	ReadKeywordsIMPOR          = iota
+	ReadKeywordsIN             = iota
+	ReadKeywordsINH            = iota
+	ReadKeywordsINHE           = iota
+	ReadKeywordsINHER          = iota
+	ReadKeywordsINHERI         = iota
+	ReadKeywordsINT            = iota
+	ReadKeywordsINTE           = iota
+	ReadKeywordsINTER          = iota
+	ReadKeywordsINTERF         = iota
+	ReadKeywordsINTERFA        = iota
+	ReadKeywordsINTERFAC       = iota
+	ReadKeywordsL              = iota
+	ReadKeywordsLE             = iota
+	ReadKeywordsM              = iota
+	ReadKeywordsMA             = iota
+	ReadKeywordsMO             = iota
+	ReadKeywordsMOD            = iota
+	ReadKeywordsMODU           = iota
+	ReadKeywordsMODUL          = iota
+	ReadKeywordsN              = iota
+	ReadKeywordsNA             = iota
+	ReadKeywordsNO             = iota
+	ReadKeywordsNOT            = iota
+	ReadKeywordsNOTH           = iota
+	ReadKeywordsNOTHI          = iota
+	ReadKeywordsNOTHIN         = iota
+	ReadKeywordsNU             = iota
+	ReadKeywordsNUL            = iota
+	ReadKeywordsO              = iota
+	ReadKeywordsOP             = iota
+	ReadKeywordsOPE            = iota
+	ReadKeywordsP              = iota
+	ReadKeywordsPR             = iota
+	ReadKeywordsPRO            = iota
+	ReadKeywordsR              = iota
+	ReadKeywordsRE             = iota
+	ReadKeywordsREP            = iota
+	ReadKeywordsREPE           = iota
+	ReadKeywordsREPEA          = iota
+	ReadKeywordsRET            = iota
+	ReadKeywordsRETU           = iota
+	ReadKeywordsRETUR          = iota
+	ReadKeywordsS              = iota
+	ReadKeywordsSE             = iota
+	ReadKeywordsSEL            = iota
+	ReadKeywordsSELE           = iota
+	ReadKeywordsSELEC          = iota
+	ReadKeywordsSI             = iota
+	ReadKeywordsSIZ            = iota
+	ReadKeywordsSIZE           = iota
+	ReadKeywordsSIZEO          = iota
+	ReadKeywordsST             = iota
+	ReadKeywordsSTR            = iota
+	ReadKeywordsSTRU           = iota
+	ReadKeywordsSTRUC          = iota
+	ReadKeywordsSW             = iota
+	ReadKeywordsSWI            = iota
+	ReadKeywordsSWIT           = iota
+	ReadKeywordsSWITC          = iota
+	ReadKeywordsT              = iota
+	ReadKeywordsTE             = iota
+	ReadKeywordsTES            = iota
+	ReadKeywordsTEST           = iota
+	ReadKeywordsTH             = iota
+	ReadKeywordsTHI            = iota
+	ReadKeywordsTHR            = iota
+	ReadKeywordsTHRO           = iota
+	ReadKeywordsTR             = iota
+	ReadKeywordsTRU            = iota
+	ReadKeywordsTY             = iota
+	ReadKeywordsTYP            = iota
+	ReadKeywordsTYPE           = iota
+	ReadKeywordsTYPEO          = iota
+	ReadKeywordsU              = iota
+	ReadKeywordsUN             = iota
+	ReadKeywordsUNS            = iota
+	ReadKeywordsUNSA           = iota
+	ReadKeywordsUNSAF          = iota
+	ReadKeywordsUNT            = iota
+	ReadKeywordsUNTI           = iota
+	ReadKeywordsV              = iota
+	ReadKeywordsVA             = iota
+	ReadKeywordsW              = iota
+	ReadKeywordsWH             = iota
+	ReadKeywordsWHE            = iota
+	ReadKeywordsWHI            = iota
+	ReadKeywordsWHIL           = iota
+	ReadKeywordsWI             = iota
+	ReadKeywordsWIT            = iota
+	ReadKeywordsX              = iota
+	ReadKeywordsXO             = iota
 )
 
 func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tempToken *Token) (Token, bool) {
@@ -756,7 +774,7 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 
 		case AcceptCStringStart:
 			return_token = Token {
-				ID:       "c-string start",
+				ID:       "string start",
 				RawValue: tempToken.RawValue,
 				Value:    string(tempToken.RawValue),
 
@@ -767,6 +785,36 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				Error: false,
 			}
 			this.StateID = ReadString
+			result = true
+
+		case AcceptWStringPrefix:
+			return_token = Token {
+				ID:       "w-string prefix",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
+			result = true
+
+		case AcceptUStringPrefix:
+			return_token = Token {
+				ID:       "u-string prefix",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
 			result = true
 
 		case AcceptStringChar:
@@ -820,6 +868,74 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			this.StateID = Start
 			result = true
 
+		case AcceptUCharPrefix:
+			return_token = Token {
+				ID:       "u-character prefix",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
+			result = true
+
+		case AcceptWCharPrefix:
+			return_token = Token {
+				ID:       "w-character prefix",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
+			result = true
+
+		case AcceptChar:
+			value := string(tempToken.RawValue)
+			if value[1] == '\\' {
+				if value[2] == 'x' {
+					x, _ := strconv.ParseUint(value[3:len(value)-1], 16, 8)
+					value = string(byte(x))
+				} else if value[2] == 'u' {
+					u, _ := strconv.ParseUint(value[3:len(value)-1], 16, 32)
+					value = string(rune(u))
+				} else {
+					switch value[2] {
+						case '\'':  value = "'"
+						case '\\': value = "\\"
+						case 'b':  value = "\b"
+						case 'f':  value = "\f"
+						case 'n':  value = "\n"
+						case 'r':  value = "\r"
+						case 't':  value = "\t"
+					}
+				}
+			} else {
+				value = value[1:len(value)-1]
+			}
+
+			return_token = Token {
+				ID:       "character",
+				RawValue: tempToken.RawValue,
+				Value:    value,
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: false,
+			}
+			this.StateID = Start
+			result = true
+
 		case RejectStringChar:
 			return_token = Token {
 				ID:       "invalid string character",
@@ -848,6 +964,21 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				Error: true,
 			}
 			this.StateID = Start
+			result = true
+
+		case RejectChar:
+			return_token = Token {
+				ID:       "invalid character in string",
+				RawValue: tempToken.RawValue,
+				Value:    string(tempToken.RawValue),
+
+				FilePath: tempToken.FilePath,
+				Line:     tempToken.Line,
+				Column:   tempToken.Column,
+
+				Error: true,
+			}
+			this.StateID = ReadString
 			result = true
 
 		case RejectNumber:
@@ -881,16 +1012,30 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			result = true
 
 		case RejectCharacter:
-			return_token = Token {
-				ID:       "invalid character",
-				RawValue: tempToken.RawValue,
-				Value:    string(tempToken.RawValue),
+			if utf8.RuneCountInString(string(tempToken.RawValue)) == 3 && len(string(tempToken.RawValue)) != 3 && string(tempToken.RawValue)[0] == '\'' && string(tempToken.RawValue)[len(string(tempToken.RawValue))-1] == '\'' {
+				return_token = Token {
+					ID:       "character",
+					RawValue: tempToken.RawValue,
+					Value:    string(tempToken.RawValue)[1:len(string(tempToken.RawValue))-1],
 
-				FilePath: tempToken.FilePath,
-				Line:     tempToken.Line,
-				Column:   tempToken.Column,
+					FilePath: tempToken.FilePath,
+					Line:     tempToken.Line,
+					Column:   tempToken.Column,
 
-				Error: true,
+					Error: false,
+				}
+			} else {
+				return_token = Token {
+					ID:       "invalid character literal",
+					RawValue: tempToken.RawValue,
+					Value:    string(tempToken.RawValue),
+
+					FilePath: tempToken.FilePath,
+					Line:     tempToken.Line,
+					Column:   tempToken.Column,
+
+					Error: true,
+				}
 			}
 			this.StateID = Start
 			result = true
@@ -911,7 +1056,15 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				Error: false,
 			}
 
-			if IsKeywordChar(thisChar) && !IsIdentChar(nextChar) {
+			if thisChar == 'w' && nextChar == '\'' {
+				this.StateID = AcceptWCharPrefix
+			} else if thisChar == 'w' && nextChar == '"' {
+				this.StateID = AcceptWStringPrefix
+			} else if thisChar == 'u' && nextChar == '\'' {
+				this.StateID = AcceptUCharPrefix
+			} else if thisChar == 'u' && nextChar == '"' {
+				this.StateID = AcceptUStringPrefix
+			} else if IsKeywordChar(thisChar) && !IsIdentChar(nextChar) {
 				this.StateID = AcceptIdent
 			} else if IsKeywordChar(thisChar) && IsKeywordChar(nextChar) {
 				switch thisChar {
@@ -941,20 +1094,38 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = AcceptIdent
 			} else if IsIdentChar(thisChar) && !IsNumChar(thisChar) && IsIdentChar(nextChar) {
 				this.StateID = ReadIdent
-			} else if thisChar == '0' && (IsIdentChar(nextChar) || nextChar == '.') {
+			} else if thisChar == '0' && IsIdentChar(nextChar) {
 				this.StateID = ReadNumberZero
+			} else if thisChar == '0' && nextChar == '.' {
+				if nextNextChar == '.' {
+					this.StateID = AcceptInteger
+				} else {
+					this.StateID = ReadNumberZero
+				}
 			} else if thisChar == '0' {
 				this.StateID = AcceptInteger
-			} else if IsNumChar(thisChar) && (IsIdentChar(nextChar) || nextChar == '.') {
+			} else if IsNumChar(thisChar) && IsIdentChar(nextChar) {
 				this.StateID = ReadNumberDigit
+			} else if IsNumChar(thisChar) && nextChar == '.' {
+				if nextNextChar == '.' {
+					this.StateID = AcceptInteger
+				} else {
+					this.StateID = ReadNumberDigit
+				}
 			} else if thisChar == '$' && nextChar == 'w' {
 				//this.StateID = ReadHexDigit1
 			} else if thisChar == '$' && nextChar == 'u' {
 				//this.StateID = ReadHexDigit1
 			} else if thisChar == '$' && nextChar == '"' {
 				//this.StateID = ReadHexDigit1
-			} else if thisChar == '$' && (IsIdentChar(nextChar) || nextChar == '.') {
+			} else if thisChar == '$' && IsIdentChar(nextChar) {
 				this.StateID = ReadHexDigit1
+			} else if thisChar == '$' && nextChar == '.' {
+				if nextNextChar == '.' {
+					this.StateID = RejectLiteral
+				} else {
+					this.StateID = ReadHexDigit1
+				}
 			} else if thisChar == '$' && nextChar == '%' {
 				this.StateID = ReadBinaryDigit0
 			} else if thisChar == '$' {
@@ -1023,6 +1194,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = AcceptOperator
 			} else if thisChar == '"' {
 				this.StateID = AcceptCStringStart
+			} else if thisChar == '\'' {
+				this.StateID = ReadChar
 			} else if thisChar == ';' && (nextChar == '\r' || nextChar == '\n') {
 				this.StateID = AcceptComment
 			} else if thisChar == ';' {
@@ -1176,6 +1349,102 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case InvalidReadBackslashX1:
 			this.StateID = RejectStringChar
 
+		case ReadChar:
+			if thisChar == '\n' {
+				this.StateID = RejectCharacter
+			} else if thisChar == '\r' {
+				this.StateID = InvalidReadChar
+			} else if thisChar == '\'' {
+				this.StateID = RejectCharacter
+			} else if thisChar == '\\' && nextChar != '\r' && nextChar != '\n' {
+				this.StateID = ReadCharBackslash
+			} else if thisChar == '\\' {
+				this.StateID = InvalidReadChar
+			} else {
+				this.StateID = ReadCharFinal
+			}
+
+		case ReadCharBackslash:
+			if thisChar == 'u' && (nextChar == '\r' || nextChar == '\n' || nextChar == '\'') {
+				this.StateID = InvalidReadChar
+			} else if thisChar == 'u' {
+				this.StateID = ReadCharBackslashU
+			} else if thisChar == 'x' && (nextChar == '\r' || nextChar == '\n' || nextChar == '\'') {
+				this.StateID = InvalidReadChar
+			} else if thisChar == 'x' {
+				this.StateID = ReadCharBackslashX
+			} else if thisChar == '\n' {
+				this.StateID = RejectCharacter
+			} else if thisChar != 'b' && thisChar != 'f' && thisChar != 'n' && thisChar != 'r' && thisChar != 't' && thisChar != '\\' && thisChar != '\'' {
+				this.StateID = InvalidReadChar
+			} else {
+				this.StateID = ReadCharFinal
+			}
+
+		case ReadCharBackslashU:
+			if thisChar == '\r' || thisChar == '\n' || thisChar == '\'' {
+				this.StateID = RejectCharacter
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadCharBackslashU1
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case ReadCharBackslashU1:
+			if thisChar == '\r' || thisChar == '\n' || thisChar == '\'' {
+				this.StateID = RejectCharacter
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadCharBackslashU2
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case ReadCharBackslashU2:
+			if thisChar == '\r' || thisChar == '\n' || thisChar == '\'' {
+				this.StateID = RejectCharacter
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadCharBackslashU3
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case ReadCharBackslashU3:
+			if IsHexChar(thisChar) {
+				this.StateID = ReadCharFinal
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case ReadCharBackslashX:
+			if thisChar == '\r' || thisChar == '\n' || thisChar == '\'' {
+				this.StateID = RejectCharacter
+			} else if IsHexChar(thisChar) {
+				this.StateID = ReadCharBackslashX1
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case ReadCharBackslashX1:
+			if IsHexChar(thisChar) {
+				this.StateID = ReadCharFinal
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
+		case InvalidReadChar:
+			if thisChar == '\'' || thisChar == '\n' {
+				this.StateID = RejectCharacter
+			}
+
+		case ReadCharFinal:
+			if thisChar == '\'' {
+				this.StateID = AcceptChar
+			} else if thisChar == '\n' {
+				this.StateID = RejectCharacter
+			} else {
+				this.StateID = InvalidReadChar
+			}
+
 		case ReadSlash:
 			if thisChar == '=' {
 				this.StateID = AcceptOperator
@@ -1271,11 +1540,15 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == 'B' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = InvalidReadNumber
 				}
 			} else if thisChar == 'w' || thisChar == 'W' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = InvalidReadNumber
@@ -1283,11 +1556,15 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			} else if thisChar == 'l' || thisChar == 'L' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = InvalidReadNumber
 				}
 			} else if thisChar == 'd' || thisChar == 'D' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = InvalidReadNumber
@@ -1295,16 +1572,22 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			} else if thisChar == 'q' || thisChar == 'Q' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptQWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptQWord
 				} else {
 					this.StateID = InvalidReadNumber
 				}
 			} else if thisChar == 'f' || thisChar == 'F' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptFloat
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptFloat
 				} else {
 					this.StateID = InvalidReadNumber
 				}
 			} else if thisChar == 'b' && !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = AcceptByte
+			} else if thisChar == 'b' && nextChar == '.' && nextNextChar == '.' {
 				this.StateID = AcceptByte
 			} else if thisChar == 'b' && IsNumChar(nextChar) {
 				this.StateID = ReadBinaryDigit
@@ -1312,6 +1595,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = InvalidReadNumber
 			} else if thisChar == 'x' && IsHexChar(nextChar) {
 				this.StateID = ReadHexDigit
+			} else if (thisChar == 'x' || thisChar == 'X') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptFixed
 			} else if thisChar == 'x' && (IsIdentChar(nextChar) || nextChar == '.') {
 				this.StateID = InvalidReadNumber
 			} else if (thisChar == 'x' || thisChar == 'X') && !IsIdentChar(nextChar) && nextChar != '.' {
@@ -1320,6 +1605,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = ReadDecimalDigit
 			} else if thisChar == '.' && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
+			} else if IsNumChar(thisChar) && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptInteger
 			} else if IsNumChar(thisChar) && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptInteger
 			} else if IsNumChar(thisChar) {
@@ -1336,20 +1623,36 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsNumChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptInteger
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptInteger
 				}
 			} else if (thisChar == 'b' || thisChar == 'B') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptByte
+			} else if (thisChar == 'b' || thisChar == 'B') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptByte
 			} else if (thisChar == 'w' || thisChar == 'W') && !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = AcceptWord
+			} else if (thisChar == 'w' || thisChar == 'W') && nextChar == '.' && nextNextChar == '.' {
 				this.StateID = AcceptWord
 			} else if (thisChar == 'l' || thisChar == 'L') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptLong
+			} else if (thisChar == 'l' || thisChar == 'L') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptLong
 			} else if (thisChar == 'd' || thisChar == 'D') && !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = AcceptDWord
+			} else if (thisChar == 'd' || thisChar == 'D') && nextChar == '.' && nextNextChar == '.' {
 				this.StateID = AcceptDWord
 			} else if (thisChar == 'q' || thisChar == 'Q') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptQWord
+			} else if (thisChar == 'q' || thisChar == 'Q') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptQWord
 			} else if (thisChar == 'f' || thisChar == 'F') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptFloat
+			} else if (thisChar == 'f' || thisChar == 'F') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptFloat
 			} else if (thisChar == 'x' || thisChar == 'X') && !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = AcceptFixed
+			} else if (thisChar == 'x' || thisChar == 'X') && nextChar == '.' && nextNextChar == '.' {
 				this.StateID = AcceptFixed
 			} else if thisChar == '.' && IsNumChar(nextChar) {
 				this.StateID = ReadDecimalDigit
@@ -1365,12 +1668,20 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsNumChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDecimal
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDecimal
 				}
 			} else if (thisChar == 'f' || thisChar == 'F') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptFloat
+			} else if (thisChar == 'f' || thisChar == 'F') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptFloat
 			} else if (thisChar == 'd' || thisChar == 'D') && !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = AcceptDouble
+			} else if (thisChar == 'd' || thisChar == 'D') && nextChar == '.' && nextNextChar == '.' {
+				this.StateID = AcceptDouble
 			} else if (thisChar == 'x' || thisChar == 'X') && !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = AcceptFixed
+			} else if (thisChar == 'x' || thisChar == 'X') && nextChar == '.' && nextNextChar == '.' {
 				this.StateID = AcceptFixed
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
@@ -1381,6 +1692,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptInteger
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptInteger
 				}
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
@@ -1393,6 +1706,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptInteger
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptInteger
 				}
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
@@ -1403,6 +1718,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadHexDigit1:
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadHexDigit2
@@ -1419,6 +1736,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadHexDigit3
 				}
@@ -1433,6 +1752,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadHexDigit3:
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadHexDigit4
@@ -1449,6 +1770,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadHexDigit5
 				}
@@ -1463,6 +1786,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadHexDigit5:
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadHexDigit6
@@ -1479,6 +1804,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadHexDigit7
 				}
@@ -1493,6 +1820,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadHexDigit7:
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadHexDigit8
@@ -1509,6 +1838,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadHexDigitQ
 				}
@@ -1524,6 +1855,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsHexChar(thisChar) {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptQWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptQWord
 				}
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
@@ -1532,8 +1865,14 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			}
 
 		case ReadBinaryDigit0:
-			if thisChar == '%' && (IsIdentChar(nextChar) || nextChar == '.') {
+			if thisChar == '%' && IsIdentChar(nextChar) {
 				this.StateID = ReadBinaryDigit1
+			} else if thisChar == '%' && nextChar == '.' {
+				if nextNextChar == '.' {
+					this.StateID = RejectNumber
+				} else {
+					this.StateID = ReadBinaryDigit1
+				}
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
 			} else {
@@ -1543,6 +1882,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit1:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit2
@@ -1559,6 +1900,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit3
 				}
@@ -1573,6 +1916,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit3:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit4
@@ -1589,6 +1934,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit5
 				}
@@ -1603,6 +1950,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit5:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit6
@@ -1619,6 +1968,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit7
 				}
@@ -1633,6 +1984,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit7:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit8
@@ -1649,6 +2002,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptByte
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptByte
 				} else {
 					this.StateID = ReadBinaryDigit9
 				}
@@ -1663,6 +2018,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit9:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit10
@@ -1679,6 +2036,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit11
 				}
@@ -1693,6 +2052,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit11:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit12
@@ -1709,6 +2070,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit13
 				}
@@ -1723,6 +2086,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit13:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit14
@@ -1739,6 +2104,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit15
 				}
@@ -1753,6 +2120,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit15:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit16
@@ -1769,6 +2138,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptWord
 				} else {
 					this.StateID = ReadBinaryDigit17
 				}
@@ -1783,6 +2154,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit17:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit18
@@ -1799,6 +2172,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit19
 				}
@@ -1813,6 +2188,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit19:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit20
@@ -1829,6 +2206,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit21
 				}
@@ -1843,6 +2222,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit21:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit22
@@ -1859,6 +2240,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit23
 				}
@@ -1873,6 +2256,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit23:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit24
@@ -1889,6 +2274,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptLong
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptLong
 				} else {
 					this.StateID = ReadBinaryDigit25
 				}
@@ -1903,6 +2290,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit25:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit26
@@ -1919,6 +2308,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit27
 				}
@@ -1933,6 +2324,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit27:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit28
@@ -1949,6 +2342,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit29
 				}
@@ -1963,6 +2358,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit29:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit30
@@ -1979,6 +2376,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit31
 				}
@@ -1993,6 +2392,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 		case ReadBinaryDigit31:
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
+					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
 					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigit32
@@ -2009,6 +2410,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptDWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptDWord
 				} else {
 					this.StateID = ReadBinaryDigitQ
 				}
@@ -2024,6 +2427,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if thisChar == '0' || thisChar == '1' {
 				if !IsIdentChar(nextChar) && nextChar != '.' {
 					this.StateID = AcceptQWord
+				} else if nextChar == '.' && nextNextChar == '.' {
+					this.StateID = AcceptQWord
 				}
 			} else if !IsIdentChar(nextChar) && nextChar != '.' {
 				this.StateID = RejectNumber
@@ -2033,6 +2438,8 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 
 		case InvalidReadNumber:
 			if !IsIdentChar(nextChar) && nextChar != '.' {
+				this.StateID = RejectNumber
+			} else if nextChar == '.' && nextNextChar == '.' {
 				this.StateID = RejectNumber
 			}
 
@@ -3833,6 +4240,7 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 			if IsKeywordChar(nextChar) {
 				switch thisChar {
 					case 'e': this.StateID = ReadKeywordsWHE
+					case 'i': this.StateID = ReadKeywordsWHI
 					default:  this.StateID = ReadIdent
 				}
 			} else if IsIdentChar(nextChar) {
@@ -3846,6 +4254,29 @@ func (this *Lexer) ReadChar(thisChar byte, nextChar byte, nextNextChar byte, tem
 				this.StateID = ReadIdent
 			} else {
 				if thisChar == 'n' {
+					this.StateID = AcceptKeyword
+				} else {
+					this.StateID = AcceptIdent
+				}
+			}
+
+		case ReadKeywordsWHI:
+			if IsKeywordChar(nextChar) {
+				switch thisChar {
+					case 'l': this.StateID = ReadKeywordsWHIL
+					default:  this.StateID = ReadIdent
+				}
+			} else if IsIdentChar(nextChar) {
+				this.StateID = ReadIdent
+			} else {
+				this.StateID = AcceptIdent
+			}
+
+		case ReadKeywordsWHIL:
+			if IsIdentChar(nextChar) {
+				this.StateID = ReadIdent
+			} else {
+				if thisChar == 'e' {
 					this.StateID = AcceptKeyword
 				} else {
 					this.StateID = AcceptIdent

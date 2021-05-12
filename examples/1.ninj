@@ -25,9 +25,9 @@ proc main() {
 	let a byte = 6
 	
 	if a == 2 and b == 3 {
-		with uint{} {
+		with uint {} {
 			this.lo = a ; This is erroneous because lo and hi are "fin" (final)
-			.hi = b     ; This is erroneous because lo and hi are "fin" (final)
+			..hi = b    ; This is erroneous because lo and hi are "fin" (final)
 			
 			c := lo + hi
 		}
@@ -57,7 +57,54 @@ proc main() {
 	} until y >= 17 // Adding until turns `do` block into a loop
 	
 	// Same as:
-	for y := 1, y < 17, y *= 2
+	while y := 1 ... y < 17 ... y *= 2
 	{
+	}
+
+	do {
+		spr ^sprite := sprite:new_random()
+		if spr is enemy {
+			with spr as enemy { // `with` can also be used with type interpretation
+				..hp -= 1 // Even though `with` is used, `spr as enemy` is implicitly called for ALL of these
+				..damage += 2 // So, no way around type checking unless we were to use some `unsafe`s
+			}
+		} else if spr is mushroom {
+			with spr as mushroom {
+				..direction *= -1
+			}
+		}
+	}
+	
+	// For efficiency and avoiding the type checking at every step, we have to use an `unsafe`
+	do {
+		spr ^sprite := sprite:new_random()
+		with spr as unsafe untyped(^sprite) { // turn it into an untyped variant
+			if spr is enemy {
+				with . as enemy { /* Now type checking is not performed, since `this` is an untyped variant*/
+					..hp -= 1 // Not only is it not checked at this step, but also not even at the initial `as` step
+					..damage += 2
+				}
+			} else if spr is mushroom {
+				with . as mushroom {
+					..direction *= -1
+				}
+			}
+		}
+	}
+	
+	// Another option for efficiency would be to just turn the `as` into `as unsafe`.
+	// The above is *slightly* safer though (1 unsafe instead of 2, and the two `as` are constrained to the untyped())
+	do {
+		spr ^sprite := sprite:new_random()
+		if spr is enemy {
+			with spr as unsafe enemy { 
+				..hp -= 1
+				..damage += 2
+			}
+		} else if spr is mushroom {
+			with spr as unsafe mushroom {
+				..direction *= -1
+			}
+		}
 	}
 }

@@ -5,22 +5,22 @@ struct *object {
 }
 
 interface enumerable(subtype type, use_index bool = true) {
-	con :iterator = when use_index select (*subtype, uint) else select subtype
+	con ::iterator = when use_index select (*subtype, uint) else select subtype
 
 	func for_each_begin() ::iterator
 	func for_each_next(iter ::iterator) ::iterator
 	func for_each_end() ::iterator
 }
 
-for each v, i in expr() {
+for v, i in expr() {
 }
 
 // is equivalent to:
 do {
-	for_expr := expr()
-	for (v, i) := for_expr.for_each_begin(),
-		(v, i) != for_expr.for_each_end(),
-		(v, i) =  for_expr.for_each_next((v, i))
+	___for_expr := expr()
+	while (v, i) := ___for_expr.for_each_begin()
+	  ... (v, i) != ___for_expr.for_each_end()
+	  ... (v, i) =  ___for_expr.for_each_next((v, i))
 	{
 	}
 }
@@ -51,9 +51,9 @@ func range(limit int) *range_object {
 	return range_object:new(limit)
 }
 
-// for each range example:
+// for in range example:
 sum := 0
-for each i in range(10) {
+for i in range(10) {
 	sum += i
 }
 
@@ -61,15 +61,35 @@ for each i in range(10) {
 sum := 0
 do {
 	___for_expr := range(10)
-	for i := ___for_expr.for_each_begin(),
-		i != ___for_expr.for_each_end(),
-		i =  ___for_expr.for_each_next(i)
+	while i := ___for_expr.for_each_begin() 
+	  ... i != ___for_expr.for_each_end()
+	  ... i =  ___for_expr.for_each_next(i)
 	{
 		sum += i
 	}
 }
 
+//
+if 6 > i > 1 {
+}
 
+// Equivalent to:
+if 6 > i and i > 1 {
+}
+
+//
+if status == "normal" || "killed" || "other" {
+}
+
+// Equivalent to:
+if status == "normal" or status == "killed" or status == "other" {
+}
+
+//
+while i := 0 ... i < 15 ... i += 1 {
+}
+
+//
 interface container {
 	func count() uint
 	func add:(rhs) object

@@ -1,0 +1,223 @@
+// `as` semantics:
+// For value polymorphism: Subtype is stored along with the VALUE, at the very end
+
+struct sprite {
+	state    word
+	
+	x       -long
+	y       -long
+}
+
+struct enemy : sprite {
+	hp     byte
+	damage byte
+}
+
+struct goomba : enemy {
+	direction bool
+}
+
+struct koopa : enemy {
+	direction  bool
+	color_type byte
+	in_shell   bool
+}
+
+struct item : sprite {
+	value byte
+}
+
+struct mushroom : item {}
+struct coin : item {
+	amount word
+}
+
+proc main() {
+	spr ^sprite := goomba {}
+	// How it's stored:
+	/*                 +---------+
+	 * spr: spr.state: |   0W    |
+	 *                 +---------+
+	 * spr.x:          |   0L    |
+	 *                 +---------+
+	 * spr.y:          |   0L    |
+	 *                 +---------+
+	 * spr.hp:         |   0B    |
+	 *                 +---------+
+	 * spr.damage:     |   0B    |
+	 *                 +---------+
+	 * spr.direction:  |  false  |
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * spr._subtype:   | goomba  |
+	 *                 +---------+
+	*/
+	spr_ref := &spr // This is not a &sprite but rather a &^sprite
+	//goom := spr_ref as &goomba // This is a compile-time error! References to polymorphic-value-objects are not polymorphic themselves
+	goom := spr as goomba // This, however, is fine, since the value itself is polymorphic. Type checking occurs here and would throw an error if the subtype was not a goomba.
+	// How it's stored now:
+	/*                 +---------+
+	 * spr: spr.state: |   0W    |
+	 *                 +---------+
+	 * spr.x:          |   0L    |
+	 *                 +---------+
+	 * spr.y:          |   0L    |
+	 *                 +---------+
+	 * spr.hp:         |   0B    |
+	 *                 +---------+
+	 * spr.damage:     |   0B    |
+	 *                 +---------+
+	 * spr.direction:  |  false  |
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * spr._subtype:   | goomba  |
+	 *                 +---------+
+	 * 
+	 *                   +---------+
+	 * goom: goom.state: |   0W    |
+	 *                   +---------+
+	 * goom.x:           |   0L    |
+	 *                   +---------+
+	 * goom.y:           |   0L    |
+	 *                   +---------+
+	 * goom.hp:          |   0B    |
+	 *                   +---------+
+	 * goom.damage:      |   0B    |
+	 *                   +---------+
+	 * goom.direction:   |  false  |
+	 *                   +---------+
+	*/
+	spr = coin { value: 329 }
+	/*                 +---------+
+	 * spr: spr.state: |   0W    |
+	 *                 +---------+
+	 * spr.x:          |   0L    |
+	 *                 +---------+
+	 * spr.y:          |   0L    |
+	 *                 +---------+
+	 * spr.value:      |   0B    |
+	 *                 +---------+
+	 * spr.amount.lo:  |   73B   |  \
+	 *                 +---------+  |--> 329W
+	 * spr.amount.hi:  |   1B    |  /
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * ...:            |   $00   |
+	 *                 +---------+
+	 * spr._subtype:   |  coin   |
+	 *                 +---------+
+	 * 
+	 *                   +---------+
+	 * goom: goom.state: |   0W    |
+	 *                   +---------+
+	 * goom.x:           |   0L    |
+	 *                   +---------+
+	 * goom.y:           |   0L    |
+	 *                   +---------+
+	 * goom.hp:          |   0B    |
+	 *                   +---------+
+	 * goom.damage:      |   0B    |
+	 *                   +---------+
+	 * goom.direction:   |  false  |
+	 *                   +---------+
+	*/
+	
+	// So what do you do if you need a usable reference to a subtype of the polymorphic value without copying?
+	coin_spr := &(spr as coin)
+	// ^ You might think to do this. However, Ninji does not let you take direct references of `as` statements. (Precisely because doing so could be unsafe)
+	// Imagine you were to then do the following:
+	spr = koopa { hp: 2, damage: 1, direction: true, color_type: 3, in_shell: true }
+	// coin_spr would then be a coin reference that points to a koopa!
+	/*                 +---------+                            +---------+
+	 * spr: spr.state: |   0W    | <-+-> coin_spr: spr.state: |   0W    |
+	 *                 +---------+   |                        +---------+
+	 * spr.x:          |   0L    |   |   coin_spr.x:          |   0L    |
+	 *                 +---------+   |                        +---------+
+	 * spr.y:          |   0L    |   |   coin_spr.y:          |   0L    |
+	 *                 +---------+   |                        +---------+
+	 * spr.hp:         |   2B    |   |   coin_spr.value:      |   2B    |
+	 *                 +---------+   |                        +---------+
+	 * spr.damage:     |   1B    |   |   coin_spr.amount.lo:  |   1B    |  \
+	 *                 +---------+   |                        +---------+  |--> 257W
+	 * spr.direction:  |  true   |   |   coin_spr.amount.hi:  |   1B    |  /
+	 *                 +---------+   |                        +---------+
+	 * spr.color_type: |   3B    |   |   coin_spr....:        |   $03   |
+	 *                 +---------+   |                        +---------+
+	 * spr.in_shell:   |  true   |   |   coin_spr....:        |   $01   |
+	 *                 +---------+   |                        +---------+
+	 * spr._subtype:   |  koopa  |   |   coin_spr._subtype:   |  koopa  | <-- Doesn't even match coin
+	 *                 +---------+   |                        +---------+
+	 *                               |
+	 *                 +---------+   |
+	 * coin_spr:       |  &coin  |---+
+	 *                 +---------+
+	 */
+	 
+	// You ask for a reference to a coin with an amount of 329. You change spr to a koopa and you suddenly get a coin with an amount of 257. This makes no sense. Therefore, doing something the above would be inherently unsafe.
+	 
+	// Therefore, to achieve something like above, you would have to use `unsafe`, like the following:
+	do {
+		coin_spr *coin := &spr as unsafe &coin // &coin implicitly gets converted to *coin
+		coin_spr.amount += 1
+	} // Safer to keep `coin_spr` scoped, so if `spr` changes, `coin_spr` can't be accessed again.
+	/*                 +---------+    
+     * spr: spr.state: |   0W    | <-+
+     *                 +---------+   |
+     * spr.x:          |   0L    |   |
+     *                 +---------+   |
+     * spr.y:          |   0L    |   |
+     *                 +---------+   |
+     * spr.value:      |   0B    |   |
+     *                 +---------+   |
+     * spr.amount.lo:  |   74B   |   | \
+     *                 +---------+   | |--> 330W
+     * spr.amount.hi:  |   1B    |   | /
+     *                 +---------+   |
+     * ...:            |   $00   |   |
+     *                 +---------+   |
+     * ...:            |   $00   |   |
+     *                 +---------+   |
+     * spr._subtype:   |  coin   |   |
+     *                 +---------+   |
+     *                               |
+     *                 +---------+   |
+     * coin_spr:       |  &coin  |---+
+     *                 +---------+
+     *                 |  coin   |
+     *                 +---------+
+     */
+	spr = koopa { hp: 2, damage: 1, direction: true, color_type: 3, in_shell: true }
+	/*                 +---------+    
+     * spr: spr.state: |   0W    | <-+
+     *                 +---------+   |
+     * spr.x:          |   0L    |   |
+     *                 +---------+   |
+     * spr.y:          |   0L    |   |
+     *                 +---------+   |
+     * spr.hp:         |   2B    |   |
+     *                 +---------+   |
+     * spr.damage:     |   1B    |   |
+     *                 +---------+   |
+     * spr.direction:  |  true   |   |
+     *                 +---------+   |
+     * spr.color_type: |   3B    |   |
+     *                 +---------+   |
+     * spr.in_shell:   |  true   |   |
+     *                 +---------+   |
+     * spr._subtype:   |  koopa  |   |
+     *                 +---------+   |
+     * v-----------------------------|-----------------------v THE BELOW IS NOW DELETED
+     *                 +---------+   |
+     * coin_spr:       |  &coin  |---+
+     *                 +---------+
+     *                 |  coin   |
+     *                 +---------+
+     */
+}

@@ -1,0 +1,140 @@
+// `as` semantics:
+// For typed variants: Subtype is stored along with the VALUE, at the very end
+// Very similar to value polymorphism.
+
+thing int ^ bool ^ char[8] := "Test!" // This means that thing can be either int, bool, or a char array, but only one at one time.
+// How it's stored:
+/*                 +---------+
+ * thing:          |   'T'   |
+ *                 +---------+
+ *                 |   'e'   |
+ *                 +---------+
+ *                 |   's'   |
+ *                 +---------+
+ *                 |   't'   |
+ *                 +---------+
+ *                 |   '!'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+ * thing._subtype: | char[8] |
+ *                 +---------+
+*/
+vari_ref := &thing // This is not a (&int) ^ (&bool) ^ (&char[8]) but rather a &(int ^ bool ^ char[8])
+//str := vari_ref as &goomba // This is a compile-time error! References to variant objects are not variants themselves
+str := thing as char[8] // This, however, is fine, since the value itself is a variant. Type checking occurs here and would throw an error if the subtype was not a char array.
+thing = 65535
+// How it's stored Now:
+/*                 +---------+
+ * thing:          |  255B   |  \
+ *                 +---------+  |
+ *                 |  255B   |  |
+ *                 +---------+  |--> 65535
+ *                 |   0B    |  |
+ *                 +---------+  |
+ *                 |   0B    |  /
+ *                 +---------+
+ *                 |   $21   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ * thing._subtype: |   int   |
+ *                 +---------+
+ *
+ *                 +---------+
+ * str:            |   'T'   |
+ *                 +---------+
+ *                 |   'e'   |
+ *                 +---------+
+ *                 |   's'   |
+ *                 +---------+
+ *                 |   't'   |
+ *                 +---------+
+ *                 |   '!'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+ *                 |  '\0'   |
+ *                 +---------+
+*/
+
+thing = true
+// How it's stored Now:
+/*                 +---------+
+ * thing:          |  true   |
+ *                 +---------+
+ *                 |   $FF   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $21   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ *                 |   $00   |
+ *                 +---------+
+ * thing._subtype: |   int   |
+ *                 +---------+
+*/
+
+// So what do you do if you need a usable reference to a subtype of the variant value without copying?
+bit := &(thing as bool)
+// ^ You might think to do this. However, Ninji does not let you take direct references of `as` statements. (Precisely because doing so could be unsafe)
+// Imagine you were to then do the following:
+thing = "lol"
+// bit would then be a bool reference that points to a character array!
+/*                 +---------+                     +---------+
+ * thing:          |   'l'   | <-+-> bit:          |  false  | (Value is 154. Lowest bit is unset, so false)
+ *                 +---------+   |                 +---------+
+ *                 |   'o'   |   |                 |   $6F   |
+ *                 +---------+   |                 +---------+
+ *                 |   'l'   |   |                 |   $6C   |
+ *                 +---------+   |                 +---------+
+ *                 |  '\0'   |   |                 |   $00   |
+ *                 +---------+   |                 +---------+
+ *                 |  '\0'   |   |                 |   $00   |
+ *                 +---------+   |                 +---------+
+ *                 |  '\0'   |   |                 |   $00   |
+ *                 +---------+   |                 +---------+
+ *                 |  '\0'   |   |                 |   $00   |
+ *                 +---------+   |                 +---------+
+ *                 |  '\0'   |   |                 |   $00   |
+ *                 +---------+   |                 +---------+
+ * thing._subtype: | char[8] |   |   bit._subtype: | char[8] | <-- Doesn't even match bool
+ *                 +---------+   |                 +---------+
+ *                               |
+ *                 +---------+   |
+ * bit:            |  &bool  |---+
+ *                 +---------+
+ */
+// You ask for a reference to a bool that is true. You change thing a string that says "lol" and suddenly you get a bool that's false. This makes no sense. Therefore, doing something the above would be inherently unsafe.
+
+// Therefore, to achieve something like above, you would have to use `unsafe`, like the following:
+do {
+	bit := &thing as unsafe &bool
+	bit <- false // Change underlying value to false
+} // Safer to keep `bit` scoped, so if `thing` changes, `bit` can't be accessed again.
+
+// Alternatively we can `unsafe`ly turn the variant into an untyped one
+do {
+	thing_untyped := thing as unsafe int | bool | char[8]
+	bit := &thing_untyped as &bool // For UNTYPED variants, you can `as` their reference into a reference of its subtype, but not for typed variants.
+	// This is because it is impossible to type-check untyped variants, and can naturally change their type on a whim regardless. So reinterpreting references to them does not introduce any ADDITIONAL degree of danger
+	bit <- false // Change underlying value to false
+	
+	other_type := &thing_untyped as &float // This, however, is a compile-time error, since float is not part of the variant.
+}

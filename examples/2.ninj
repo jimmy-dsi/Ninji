@@ -18,14 +18,14 @@ struct array(subtype type, size uint) : list
 	}
 	
 	con ::length = size ; Ninji equivalent of static variables. Accessed via array(byte, 2):length (the con before makes it constant)
-	::instances  = 0    ; Non-constant static variable
+	::instances = 0     ; Non-constant static variable
 	
 	::long_string_test =
 		"""This is:
-		  "   a,
-		  "   test,
-		  "   nice.
-		  "End."""
+		  |   a,
+		  |   test,
+		  |   nice.
+		  |End."""
 	
 	repeat i in size {
 		_ subtype
@@ -73,9 +73,9 @@ struct array(subtype type, size uint) : list
 	func append(value subtype) array(subtype, size+1) {
 		new_array := array(subtype, size+1) {}
 		
-		for i := $0,
-			i < size,
-			i += 0x1
+		while i := $0
+		  ... i < size
+		  ... i += 0x1
 		{
 			new_array[i] = this[i]
 		}

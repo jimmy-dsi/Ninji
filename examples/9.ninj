@@ -1,0 +1,218 @@
+// `as` semantics:
+// For reference polymorphism: Subtype is stored along with the REFERENCE, not underlying type
+thing *object := uint {}
+// How it's stored:
+/*                 +---------+    +---------+
+ * thing:          | &object |--> |    0    |
+ *                 +---------+    +---------+
+ * thing._subtype: |  uint   |
+ *                 +---------+
+*/
+thing2 := thing
+thing = 6.9
+// How it's stored now:
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |    0    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  |  float  |  |                 |
+ *                  +---------+  |   +---------+   |
+ *                               +-> |  6.9f   |   |
+ *                                   +---------+   |
+ *                  +---------+                    |
+ * thing2:          | &object |--------------------+
+ *                  +---------+
+ * thing2._subtype: |  uint   |
+ *                  +---------+
+ */
+thing3 := thing2 as *uint // This has its reference type checked before interpreting, and in this case, it passes!
+// How it's stored now:
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |    0    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  |  float  |  |                 |
+ *                  +---------+  |   +---------+   |
+ *                               +-> |  6.9f   |   |
+ *                                   +---------+   |
+ *                  +---------+                    |
+ * thing2:          | &object |--------------------+
+ *                  +---------+                    |
+ * thing2._subtype: |  uint   |                    |
+ *                  +---------+                    |
+ *                                                 |
+ *                  +---------+                    |
+ * thing3:          |  &uint  |--------------------+
+ *                  +---------+
+ * thing3._subtype: |  uint   |
+ *                  +---------+
+ */
+thing3 <- 14 // This changes the underlying value of thing3 to 14:
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  |  float  |  |                 |
+ *                  +---------+  |   +---------+   |
+ *                               +-> |  6.9f   |   |
+ *                                   +---------+   |
+ *                  +---------+                    |
+ * thing2:          | &object |--------------------+
+ *                  +---------+                    |
+ * thing2._subtype: |  uint   |                    |
+ *                  +---------+                    |
+ *                                                 |
+ *                  +---------+                    |
+ * thing3:          |  &uint  |--------------------+
+ *                  +---------+
+ * thing3._subtype: |  uint   |
+ *                  +---------+
+ */
+some_string := "djhfh"
+//thing <- some_string // This will throw a compiletime error. While string is indeed a subtype of object, you cannot change the underlying VALUE to a string.
+thing = some_string // You CAN, however, change its reference to that of the new string
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |   +---------+   |
+ *                               |   |  6.9f   | <---- Nothing references this now, so it will get garbage collected.
+ *                               |   +---------+   |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+   |
+ * thing2._subtype: |  uint   |  +-> |   'd'   |   |
+ *                  +---------+      +---------+   |
+ *                                   |   'j'   |   |
+ *                  +---------+      +---------+   |
+ * thing3:          |  &uint  |--+   |   'h'   |   |
+ *                  +---------+  |   +---------+   |
+ * thing3._subtype: |  uint   |  |   |   'f'   |   |
+ *                  +---------+  |   +---------+   |
+ *                               |   |   'h'   |   |
+ *                               |   +---------+   |
+ *                               |                 |
+ *                               +-----------------+
+ */
+try {
+	thing3 = thing as *uint // This is valid code at compiletime, but will throw exception since the underlying value is now a cstring
+} catch e {
+	print(e)
+}
+
+thing4 := thing as *cstring // This one will pass
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |                 |
+ *                               |                 |
+ *                               |                 |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+ 
+ * thing2._subtype: |  uint   |  +-> |   'd'   | 
+ *                  +---------+  |   +---------+ 
+ *                               |   |   'j'   | 
+ *                  +---------+  |   +---------+ 
+ * thing4:          |&cstring |--+   |   'h'   | 
+ *                  +---------+      +---------+ 
+ * thing4._subtype: | cstring |      |   'f'   | 
+ *                  +---------+      +---------+ 
+ *                                   |   'h'   | 
+ *                                   +---------+ 
+ */
+thing <- object {} // If object were not abstract, this would be valid.
+// A reference type can only have its underlying valu replaced by an object of its own type. It cannot be replaced by a subtype.
+// All the derived parts of the cstring that it references will still be intact, but the base properties will change.
+// This could be considered unsafe in certain things, but generally speaking, it is probably ok. Ninji considers it acceptable and not unsafe
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |                 |
+ *                               |                 |
+ *                               |                 |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+ 
+ * thing2._subtype: |  uint   |  +-> |   'd'   | 
+ *                  +---------+  |   +---------+ 
+ *                               |   |   'j'   | 
+ *                  +---------+  |   +---------+ 
+ * thing4:          |&cstring |--+   |   'h'   | 
+ *                  +---------+      +---------+ 
+ * thing4._subtype: | cstring |      |   'f'   | 
+ *                  +---------+      +---------+ 
+ *                                   |   'h'   | 
+ *                                   +---------+ 
+ */
+thing5 := thing as &cstring // The `&` gives us a naked reference. This is like a polymorphic reference but without the subtype parameter.
+// As usual, the `as` is evaluated at runtime and throws an exception if the type does not match.
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |                 |
+ *                               |                 |
+ *                               |                 |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+ 
+ * thing2._subtype: |  uint   |  +-> |   'd'   | 
+ *                  +---------+  |   +---------+ 
+ *                               |   |   'j'   | 
+ *                  +---------+  |   +---------+ 
+ * thing5:          |&cstring |--+   |   'h'   | 
+ *                  +---------+      +---------+ 
+ *                                   |   'f'   | 
+ *                                   +---------+ 
+ *                                   |   'h'   | 
+ *                                   +---------+ 
+ */
+thing6 := thing as &object
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |                 |
+ *                               |                 |
+ *                               |                 |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+ <-+ (Valid object pointer, but knows nothing of the derived properties)
+ * thing2._subtype: |  uint   |  +-> |   'd'   |   | (Sees it as object {} instead of "djhfh")
+ *                  +---------+      +---------+   |
+ *                                   |   'j'   |   |
+ *                  +---------+      +---------+   |
+ * thing6:          | &object |--+   |   'h'   |   |
+ *                  +---------+  |   +---------+   |
+ *                               |   |   'f'   |   |
+ *                               |   +---------+   |
+ *                               |   |   'h'   |   |
+ *                               |   +---------+   |
+ *                               |                 |
+ *                               +-----------------+
+ */
+//thing7 := thing6 as *object // While a `*` can be interpreted as a `&` pointer, the opposite is not true. This is a compiletime error.
+thing7 := thing7 -> *object // It can, however, be CONVERTED to one.
+/*                  +---------+      +---------+
+ * thing:           | &object |--+   |   14    | <-+
+ *                  +---------+  |   +---------+   |
+ * thing._subtype:  | cstring |  |                 |
+ *                  +---------+  |                 |
+ *                               |                 |
+ *                               |                 |
+ *                  +---------+  |                 |
+ * thing2:          | &object |--|-----------------+
+ *                  +---------+  |   +---------+ <-+
+ * thing2._subtype: |  uint   |  +-> |   'd'   |   |
+ *                  +---------+      +---------+   |
+ *                                   |   'j'   |   |
+ *                  +---------+      +---------+   |
+ * thing6:          | &object |--+   |   'h'   |   |
+ *                  +---------+  |   +---------+   |
+ *                               |   |   'f'   |   |
+ *                  +---------+  |   +---------+   |
+ * thing7:          | &object |--+   |   'h'   |   |
+ *                  +---------+  |   +---------+   |
+ * thing7._subtype: | object  |  |                 |
+ *                  +---------+  +-----------------+
+ */

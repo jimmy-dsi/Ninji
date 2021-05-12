@@ -1,0 +1,349 @@
+// Types of types
+	standalone // The type is as-is. Nothing special about it.
+	untyped | variant | of | types // The type could be either one of the subtypes listed here (or more than one, since there's no way to determine what underlying type it actually is)
+	typed ^ variant ^ of ^ types // Type type could be either one of the listed subtypes, but only one at a time. The subtype is stored along with the value of the variant itself.
+	&plain_reference // A reference to a `plain_reference` type. Essentially an unsigned integer that points to the memory address of the underlying `plain_reference` type. A fancy, constrained, pointer.
+	|untyped_polymorphic_value_type // This type is essentially an untyped variant of `untyped_polymorphic_value_type`, and all of its derived types. The only difference is that all members and methods of the base type can be accessed directly, without needing to use an `as`
+	^typed_polymorphic_value_type // This type is essentially a typed variant of `untyped_polymorphic_value_type`, and all of its derived types. The only difference is that all members and methods of the base type can be accessed directly, without needing to use an `as`
+	&untyped | &reference | &variant // Does the same thing as typical untyped variants, but the underlying subtypes are references
+	&typed ^ &reference ^ &variant // Does the same thing as typical typed variants, but the underlying subtypes are references
+	*typed_polymorphic_reference_type // This type is essentially a typed variant of a reference to `typed_polymorphic_reference_type`, and references to all of its derived types. The only difference is that all members and methods of the base type can be accessed directly, without needing to use an `as`. If there are no derived types, it's essentially a standard reference with an extra byte
+	?nullable_type // A typed variant of `nullable_type` and `nullable`. Basically the same as `nullable_type ^ nullable`
+	?&nullable_reference_type
+	?*nullable_polymorphic_reference_type
+	??untyped_nullable_type // Basically `untyped_nullable_type | nullable`
+	(some_type_1 | some_type_2 | some_type_3) & (some_type_2 | some_type_3 | some_type_4) // Result is `some_type_2 | some_type_3`
+	(some_type_1 ^ some_type_2 ^ some_type_3) & (some_type_2 ^ some_type_3 ^ some_type_4) // Gets the intersection of two typed or untyped variants. In this case, the result is `some_type_2 ^ some_type_3`
+	|interface_1 & |interface_2 // Gives us an untyped variant of all types that implement both interfaces. `as` not required for base interface methods
+	^interface_1 & ^interface_2 // Gives us a typed variant of all types that implement both interfaces. `as` not required for base interface methods
+	*interface_1 & *interface_2 // Gives us a typed variant of all references to types that implement both interfaces. `as` not required for base interface methods
+	interface_type // Not valid. Must be a polymorphic type of some sort (* or ^)
+	abstract_base_type // Not valid. Must be a polymorphic type of some sort (* or ^)
+	some_type_1 & some_type_2 // Invalid because no types can satisfy this (unless both sides are variants of some kind)
+	~some_type // Results in a typed variant of all object types except for `some_type`. Dangerous as it may result in a huge size if not paired with intersection: `&`
+	!some_type // Results in a typed variant of all REFERENCES to object types except for `some_type`. Must safer than the above version.
+	untyped(some_variant_type) // Results in an an untyped version of the supplied type. If `some_variant_type` is already untyped, or is not a variant, then the result is the same.
+	unref(some_reference_type) // Results in an unreferenced type of `some_reference_type`. Example: unref(&int) == int. unref(untyped(*int)) == int
+	(some_type_1 ^ some_type_2) | (some_type_3 ^ some_type_4) // Invalid. Cannot mix typed and untyped variants.
+	(some_type_1 | some_type_2) ^ (some_type_3 | some_type_4) // Invalid. Cannot mix typed and untyped variants.
+	(some_type_1 | some_type_2) | (some_type_3 | some_type_4) // Valid. Results in a single untyped variant composed of the types in the two untyped variants.
+	(some_type_1 ^ some_type_2) ^ (some_type_3 ^ some_type_4) // Valid. Results in a single typed variant composed of the types in the two typed variants.
+	(some_type_1 ^ some_type_2) & (some_type_3 | some_type_4) // Invalid. Cannot intersect a typed variant with an untyped variant. Throws compile-time error.
+	(typed_variant_1 & typed_variant_2) | (typed_variant_3 & typed_variant_4) // Invalid. Cannot mix typed and untyped variants.
+	(untyped_variant_1 & untyped_variant_2) ^ (untyped_variant_3 & untyped_variant_4) // Invalid. Cannot mix typed and untyped variants.
+	some_type | some_type == some_type // Not even a variant. Just `some_type`
+	some_type ^ some_type == some_type // Not even a variant. Just `some_type`
+	some_type & some_type == some_type // Not even a variant. Just `some_type`
+
+	type_1 | type_2 == type_2 | type_1 // Variants are basically sets, so order does not matter.
+	type_1 ^ type_2 == type_2 ^ type_1 // Variants are basically sets, so order does not matter.
+	
+	some_type + some_other_type // Gives us a tuple: `tuple(some_type, some_other_type)`
+	(type1 + type2) + (type3 + type4) // Nested tuple: `tuple(tuple(type1, type2), tuple(type3, type4))`
+
+	/* The golden rules of types and obejcts:
+	 *	1. `type` is a type
+	 *	2. All types are of type: `type`
+	 *	3. References, generics, tuples, procedures, and variants are all types.
+	 *	4. An object can be created of any type.
+	 *	5. Objects of all types, with the exception of variants, derive from `object`
+	 *	6. Because of the above rule, any parameter or value that expects `*object` cannot DIRECTLY have another reference variant passed into it. The variant can be converted to `*object`, however.
+	 *	7. Variants may contain any type that inherits from `object`. This means that variants cannot contain other variants. Attempting to do so simply creates a larger variant.
+	*/
+
+// Interpretation `as` semantics:
+	standalone // `as` cannot be safely applied to any other type except itself
+	untyped | variant | of | types // `as` can be safely applied to any subtype in the variant, or even any subset of the types. It will also never throw an error, as the variant is untyped.
+	typed ^ variant ^ of ^ types // `as` can be safely applied to any subtype in the variant (but not subset, except itself). It will throw an error if the underlying subtype does not match the `as` type.
+	&plain_reference // `as` cannot be safely applied to any other type except itself
+	|untyped_polymorphic_value_type // `as` can be safely applied to any derived type, or even any subset of the derived/base types. It will also never throw an error, as the variant is untyped.
+	^typed_polymorphic_value_type // `as` can be safely applied to any derived type (but not subsets or polymorphic derived types). It will throw an error if the underlying subtype does not match the `as` type, and the underlying subtype does not derive from the `as` type.
+	*typed_polymorphic_reference_type // `as` can be safely applied to any REFERENCE TYPE to any derived type (but not subsets or polymorphic derived types). It will throw an error if the underlying subtype does not match the `as` type, and the underlying subtype does not derive from the `as` type.
+	?nullable_type // `as` can be safely applied to `nullable_type` or `nullable`, However, postfix `?` operator and `=== null` is preferable. Will throw error if the subtype does not match the `as` type
+	??untyped_nullable_type // `as` can be safely applied to `nullable_type` or `nullable`. No error will be thrown as it is untyped.
+
+// Interpretation `as unsafe` semantics:
+	any_type as unsafe any_other_type // Any type may be unsafely interpreted as another type. This also allows references and variant types. Reference types and value types can even be converted to each other, or any combination.
+
+// Copy semantics:
+	some_var standalone := standalone {} // Valid
+
+	some_var   untyped|variant       := untyped {} // Valid
+	some_var   untyped|variant       := variant {} // Valid
+	some_var_2 untyped|variant       := some_var   // Valid
+	some_var_3 untyped|variant|types := some_var   // Valid
+
+	some_var   typed^variant       := typed {}   // Valid
+	some_var   typed^variant       := variant {} // Valid
+	some_var_2 typed^variant       := some_var   // Valid
+	some_var_3 typed^variant^types := some_var   // See conversion and implicit conversion semantics. (But valid, only for those reasons)
+
+	ref_var &reference_type := & reference_type{} // Valid
+
+// Conversion `->` semantics:
+	standalone -> other_standalone // Valid on a per-type basis if conversion procedure is defined.
+
+	standalone_derived  -> standalone_base  // Valid. Not overrideable. 
+	&standalone_derived -> &standalone_base // Valid. Not overrideable. 
+
+	any_type -> &any_type // Valid. Will implicitly reference any_type into its reference type. This type of conversion conversion cannot be overloaded and any_type -> &any_other_type is not allowed to be defined or used.
+	&any_type -> any_type // Valid. Will implicitly de-reference any_type into its value type. This type of conversion conversion cannot be overloaded and &any_type -> any_other_type is not allowed to be defined or used.
+	&any_type  -> &&any_type // Valid. Does the same things as above.
+	&&any_type -> &any_type  // Valid. Does the same things as above.
+	any_type   -> &&any_type // Not valid. Only one level of reference/dereference conversion is allowed. However, `any_type -> &any_type -> &&any_type` is a valid way to achieve this.
+	&&any_type -> any_type   // Not valid. Only one level of reference/dereference conversion is allowed. However, `&&any_type -> &any_type -> any_type` is a valid way to achieve this.
+
+	some_type -> some_type|some_other_type // Valid.
+	some_type -> some_type^some_other_type // Valid.
+	&some_type -> *some_type // Valid. Technically equivalent to the above rule as well.
+	some_type -> *some_type  // Valid. Does the same as `some_type -> &some_type -> *some_type`
+	typed^variant -> typed^variant^types // Valid.
+	typed^variant -> typed               // Valid if both `typed` and `variant` inherit or implement `typed`, otherwise not.
+	typed^variant -> variant             // Valid if both `typed` and `variant` inherit or implement `variant`, otherwise not.
+	*some_type -> &some_type // Valid. Technically equivalent to the above two rules as well.
+	*some_type -> some_type  // Valid. Does the same as `*some_type -> &some_type -> some_type`
+
+// Implicit conversion semantics:
+	dest_var dest_type := source_type {} // Valid if there is a direct conversion defined for `source_type -> dest_type`. Implicit conversion occurs here.
+
+	proc some_proc(arg dest_type_2) dest_type {
+		return source_type {} // Valid if there is a direct conversion defined for `source_type -> dest_type`. Implicit conversion occurs here.
+	}
+	some_proc(source_type_2 {}) // Valid if there is a direct conversion defined for `source_type_2 -> dest_type_2`. Implicit conversion occurs here.
+
+// `is` and `is not` semantics:
+	(some_type {}) is     some_type // Always true
+	(some_type {}) is not some_type // Always false
+
+	(derived_type {}) is     base_type // true if `derived_type` inherits from `base_type`
+	(derived_type {}) is not base_type // false if `derived_type` inherits from `base_type`
+
+	&(derived_type {}) is     &base_type // true if `derived_type` inherits from `base_type`
+	&(derived_type {}) is not &base_type // false if `derived_type` inherits from `base_type` 
+
+	(some_type  {}) is &some_type // Always false. A value type is not a reference type.
+	(&some_type {}) is some_type  // Always false. A reference type is not a value type.
+
+	(some_type {}) is some_interface // true if `some_type` implements `some_interface`
+
+	some_var ^base_type := derived_type {}
+	if some_var is derived_type {
+		// true because `some_var` is currently a `derived_type`
+	} else if some_var is derived_type_2 {
+		// Would be true only if `some_var` were currently a `derived_type_2`
+	} else if some_var is base_type {
+		// Always true. Would go here if the above two were false
+	}
+
+	some_var *base_type := derived_type {} // Implicitly becomes `&derived_type{}`
+	if some_var is &derived_type {
+		// true because `some_var` is currently a `&derived_type`
+	} else if some_var is &derived_type_2 {
+		// Would be true only if `some_var` were currently a `&derived_type_2`
+	} else if some_var is &base_type {
+		// Always true. Would go here if the above two were false
+	}
+
+	some_var type1|type2|type3 := something()
+	if some_var is type1 {} // Always true, but useless comparison since the untyped variant is all 3 types at once
+	some_var type1^type2^type3 := something()
+	if some_var is type1 {} // true if the current type of `some_var` is `type1` or inherits from/implements `type1`
+
+	(type1 {}) is type1|type2 // Always true
+	(type1 {}) is type1^type2 // Always true
+
+	some_var type1^type2^type3 := something()
+	if some_var is type1^type2 {} // true if `some_var` is either `type1` or `type2`. If `some_var` were `type3`, this would be false (unless `type3` inherits/implements `type1` or `type2`).
+	if some_var is type1|type2 {} // true if `some_var` is either `type1` or `type2`. If `some_var` were `type3`, this would be false (unless `type3` inherits/implements `type1` or `type2`).
+
+	some_var type1|type2|type3 := something()
+	if some_var is type1^type2 {} // Always true since the lhs variant is untyped.
+	if some_var is type1|type2 {} // Always true since the variant is untyped.
+
+	some_var type1^type2 := something()
+	if some_var is type1^type2^type3 {} // Always true since variant is a subset
+	if some_var is type1|type2|type3 {} // Always true since either `type1` or `type2` is always going to be a `type1|type2|type3`
+
+	some_var type1|type2 := something()
+	if some_var is type1^type2^type3 {} // Always true since `type1` or `type2` is rhs.
+	if some_var is type1|type2|type3 {} // Always true since variant is a subset
+
+	some_var type1^type2 := something()
+	if some_var is type2^type3 {} // true only if `some_var` is `type2` or inherits/implements either type.
+	if some_var is type2|type3 {} // true only if `some_var` is `type2` or inherits/implements either type.
+
+	some_var type0|type1|type2 := something()
+	if some_var is type2^type3 {} // true since `type1` and `type2` fulfill the rhs
+	if some_var is type2|type3 {} // true since `type1` and `type2` fulfill the rhs
+	
+	some_var type1|type2 := something()
+	if some_var is type3^type4 {} // Unless either `type1` or `type2` inherit `type3` or `type4`, this is always false
+	if some_var is type3|type4 {} // Unless either `type1` or `type2` inherit `type3` or `type4`, this is always false
+	
+	notype.is_type(some_type) // Always true, regardless of what `some_type` is.
+	notype.is_type(notype) // Always true.
+	
+	(any_type {}) is notype // Always false. Nothing can be `notype` except for `notype`
+	
+	// General pseudocode for `is`:
+	func is(rhs type) {
+		func type_is(lhs type, rhs type) {
+			if lhs.is_variant() { // and untyped
+				result := false
+				for subtype in lhs {
+					result = result or type_is(subtype, rhs)
+				}
+				return result
+			} else if rhs.is_variant() {
+				result := false
+				for subtype in rhs {
+					result = result or type_is(lhs, subtype)
+				}
+				return result
+			} else {
+				if lhs == rhs {
+					return true
+				} else if !equals_only and lhs.inherits(rhs) {
+					return true
+				} else {
+					return false
+				}
+			}
+		}
+	
+		lhs := *this
+	
+		if (typeof lhs).is_variant() {
+			if (typeof lhs).is_typed() {
+				return type_is(lhs.get_type(), rhs)
+			}
+		}
+		
+		return type_is(typeof lhs, rhs)
+	}
+
+// `==` and `===` semantics:
+	(type1 {}) == (type1 {}) // Performs `type1 {}.compare:(type1 {}) == 0`
+	(type1 {}) == (type2 {}) // Performs `type1 {}.compare:(type2 {}) == 0`
+	&(type1 {}) == &(type2 {}) // Value comparison. Will dereference and perform the above, AKA: `*&(type1 {}).compare:(*&(type2 {})) == 0`
+	&(type1 {}) === &(type2 {}) // Reference comparison. Only true if LHS and RHS reference the same object, and are of the same reference type.
+	
+	// General pseudocode for `===`:
+	func is_identical(rhs *object) {
+		lhs := this
+		
+		lhs_type := lhs.get_value_type() // lhs and rhs are references, so this method gives us the same thing as (*lhs).get_type()
+		rhs_type := rhs.get_value_type() // lhs and rhs are references, so this method gives us the same thing as (*rhs).get_type()
+		
+		if lhs_type != rhs_type {
+			return false
+		}
+		
+		byte_size := sizeof(lhs_type)
+		for i in range(byte_size) {
+			if *lhs as unsafe ptr + i as unsafe &byte != *rhs as unsafe ptr + i as unsafe &byte { // ptr is an alias for the uint type used by the cpu for addresses
+				return false
+			}
+		}
+		
+		return true // only returns true if the two are a byte-for-byte match with the same type
+	}
+
+// `return` semantics:
+	func something() {
+		if const_expr() {
+			return type_a {} // If `const_expr()` is determined to be `true` at compiletime, then this function's return type will be inferred as `type_a` unconditionally
+		} else {
+			return type_b {} // If `const_expr()` is determined to be `false` at compiletime, then this function's return type will be inferred as `type_b` unconditionally
+		}
+	}
+	
+	func something() { // return type is inferred as being `type_a ^ type_b`. Since the condition cannot be determined at compile-time, the compiler checks all possible paths, and constructs a variant type out of all possible return types.
+		if runtime_expr() {
+			return type_a {}
+		} else {
+			return type_b {}
+		}
+	}
+	
+	func something() & { // The `&` means: whatever the inferred return type is, make it a reference, and reference the return value implicitly.
+		return int {} // In this case, `int {}` will be referenced and the return type of this function will be `&int`
+	}
+	
+	func something() * { // The `*` means: whatever the inferred return type is, make it unreferenced, and dereference the return value implicitly.
+		int_ref &int := some_int_ref()
+		return int_ref // In this case, `int_ref` will be dereferenced and the return type of this function will be `int`
+	}
+	
+	func something() * {
+		return int {} // In this case, a compile-time error will be thrown since non-reference type variables cannot be dereferenced.
+	}
+	
+	func something() & { // In this example, the return type we get is &type_a ^ &type_b
+		if runtime_expr() {
+			return type_a {}
+		} else {
+			return type_b {}
+		}
+	}
+	
+	func something() { // This example gives us `?int`
+		if runtime_expr() {
+			return 0
+		} else {
+			return null
+		}
+	}
+	
+	func something() void {
+		return nothing // Unlike most languages, we cannot use `return` without a value. If we have a void-returning function, we use the void-literal: `nothing`
+	}
+	
+	func something() void {
+		print("test")
+		// We can also let it reach the end of the function body. However, this only works with explicit return types.
+	}
+	
+	func something(a byte) {
+		if a == 1 {
+			return true
+		} else if a == 2 {
+			return false
+		} else if a == 3 {
+			return null
+		}
+		// When we have an implicit return type, ALL code paths must have an EXPLICIT return. So, we cannot have the function return void by simply reaching the end of the function body.
+		// Unless this is in a struct that inherits from another struct that implements this method, this example results in a compile-time error. Otherwise, it inherits from the parent method.
+	}
+	
+	func something(a byte) { // The inferred type will be `bool ^ nullable ^ void`
+		if a == 1 {
+			return true
+		} else if a == 2 {
+			return false
+		} else if a == 3 {
+			return null
+		} else {
+			return nothing // Adding this gives us what we want from the above example.
+		}
+	}
+	
+	func something() string {
+		return int {} // If the `return` value doesn't match the explicit return type, or cannot be implicitly converted to the explicit return type, an error is thrown at compile-time
+	}
+	
+	func something() notype { // `notype` is equivalent to a variant containing no types. If a function/procedure returns `notype`, it must throw an exception.
+	}
+	
+	func something() { // Any procedure where all code paths throw an exception with have its return type inferred as `notype`
+		throw error:new("some error")
+	}
+	
+// `select` semantics:
+	
+
+// Initialization semantics:
+
+// More stuff regarding untyped variants:
+	some_var unsafe type_1|type_2 = type_1 {} // This is how they have to be declared. With `unsafe`
+	some_var_2      type_1^type_2 = type_2 {} // Restriction does not apply to typed variants. They are already type-safe.
