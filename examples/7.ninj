@@ -68,8 +68,6 @@ proc fourth_proc(obj *base_type) {
 	a := *base_type as derived_type
 	return a
 	
-	nani.the.fuck + ..nani
-	
 	_djfkj.jkgh
 	fgkjf.hjfghj._fhdjghf.dghj
 	.something.gffg
