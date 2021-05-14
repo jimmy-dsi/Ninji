@@ -1,0 +1,149 @@
+module main
+
+import math
+import threads as .
+
+proc main() {
+	print(async_main().value())
+}
+
+async proc async_main() {
+	files_data  := test()
+	math_result := math.fib(100)
+	return await files_data + math_result->cstring
+}
+
+async proc test() *string {
+	data_1 := read_file("some_file_1.txt")
+	data_2 := read_file("some_file_2.txt")
+	data_3 := read_file("some_file_3.txt")
+	
+	do_stuff := 1 + 3
+	
+	return await data_1 + "\n" + await data_2 + "\n" + await data_3 + do_stuff->cstring
+}
+
+async proc read_file(file_path *string) *string {
+	result := ""
+	t := spawn open_file(file_path, &result)
+	
+	while !t.finished() {
+		yield
+	}
+	
+	return &result
+}
+
+// Translates to:
+
+proc main() {
+	t := async_main()
+	while !t.has_value() {
+		t = async_main(t.frame(), t.position())
+	}
+	print(t.get_value())
+}
+
+proc async_main(in_frame ?*task_frame = null, position ?ptr) task(*string) {
+	frame_prototype := task_frame {
+		files_data:  task(*string) {},
+		math_result: int {}
+	}
+
+	frame :=
+		when in_frame === null
+			select &frame_prototype
+		else
+			select in_frame as *task_frame as typeof &frame_prototype
+			
+	if position !== null {
+		jump position
+	}
+
+	frame.files_data  = test()
+	frame.math_result = math.fib(100)
+	
+	return task(*string):new(
+		frame    = frame,
+		position = after_return
+	)
+	
+	after_return: do { }
+
+	while !frame.files_data.has_value() {
+		frame.files_data = test(t.frame(), frame.files_data.position())
+		return task(*string):new(
+			frame    = frame,
+			position = after_return_2
+		)
+		after_return_2: do { }
+	}
+	
+	return task(*string):new(
+		value = frame.files_data.get_value() + math_result->cstring
+	)
+}
+
+proc test(in_frame ?*task_frame = null, position ?ptr) task(*string) {
+	frame_prototype := task_frame {
+		data_1: task(*string) {},
+		data_2: task(*string) {},
+		data_3: task(*string) {},
+		
+		do_stuff: int {}
+	}
+
+	frame :=
+		when in_frame === null
+			select &frame_prototype
+		else
+			select in_frame as *task_frame as typeof &frame_prototype
+			
+	if position !== null {
+		jump position
+	}
+
+	frame.data_1 = read_file("some_file_1.txt")
+	frame.data_2 = read_file("some_file_2.txt")
+	frame.data_3 = read_file("some_file_3.txt")
+	
+	frame.do_stuff = 1 + 3
+	
+	return task(*string):new(
+		frame    = frame,
+		position = after_return
+	)
+	
+	after_return: do { }
+
+	while !frame.data_1.has_value() {
+		frame.data_1 = read_file("", frame.data_1.frame(), frame.data_1.position()) // Parameter shouldn't matter as it is stored with frame
+		return task(*string):new(
+			frame    = frame,
+			position = after_return_2
+		)
+		after_return_2: do { }
+	}
+
+	while !frame.data_2.has_value() {
+		frame.data_2 = read_file("", frame.data_2.frame(), frame.data_2.position()) // Parameter shouldn't matter as it is stored with frame
+		return task(*string):new(
+			frame    = frame,
+			position = after_return_3
+		)
+		after_return_3: do { }
+	}
+
+	while !frame.data_3.has_value() {
+		frame.data_3 = read_file("", frame.data_3.frame(), frame.data_3.position()) // Parameter shouldn't matter as it is stored with frame
+		return task(*string):new(
+			frame    = frame,
+			position = after_return_4
+		)
+		after_return_4: do { }
+	}
+	
+	return task(*string):new(
+		value = frame.data_1.get_value() + "\n" + frame.data_2.get_value() + "\n" + frame.data_3.get_value() + frame.do_stuff -> cstring
+	)
+}

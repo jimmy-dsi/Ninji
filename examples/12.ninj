@@ -34,6 +34,7 @@
 	some_type | some_type == some_type // Not even a variant. Just `some_type`
 	some_type ^ some_type == some_type // Not even a variant. Just `some_type`
 	some_type & some_type == some_type // Not even a variant. Just `some_type`
+	disjoint_type_1 & disjoint_type_2 == notype
 
 	type_1 | type_2 == type_2 | type_1 // Variants are basically sets, so order does not matter.
 	type_1 ^ type_2 == type_2 ^ type_1 // Variants are basically sets, so order does not matter.
@@ -340,10 +341,89 @@
 	}
 	
 // `select` semantics:
-	
+	some_var :=
+		when a >= 5 select "Hello"
+		else select 22.5f
+		// `some_var` will be inferred to be `char[] ^ float`
+		
+	some_var :=
+		when a >= 5 select eval {
+			sum := 0
+			for i in range(a) {
+				sum += i
+			}
+			if sum >= 20 {
+				return u'あ'
+			} else {
+				return false
+			}
+		} // Will be evaluated to `uchar ^ bool`
+		else select null
+		// `some_var` will be inferred to be `uchar ^ bool ^ nullable`
+		
+	some_var :=
+		when some_const == 69 select '2'
+		else select 2
+		// You'd think this would be `char ^ int`, but since the expression being evaluated is constant, the else can never fire. So at compile-time this can be inferred to be `char`
+		
+	some_var :=
+		when b == "Hello" select some_function_that_throws_an_error()
+		else select 6
+		// Technically, you could think of this as being inferred as `int ^ notype`, but since `notype` is just the empty variant, we get `int` only
+		
+	some_var :=
+		when some_const == "Hello" select some_function_that_throws_an_error()
+		else select 6
+		// This time, since it is a constant expression, we can say, without a doubt, that this is `notype` (if `some_const` actually was `"Hello"`)
+		// Because we are attempting to create a variable of `notype`, this will throw an error at run-time (but not compile-time!! actually)
+		// Every statement in the same scope as this assignment, after this assignment, will be determined by the compiler to be unreachable code.
+		
+	some_var := when a == 42 select eval { throw error:new("aaaAAAA") }
+		   else when a == 69 select eval { throw error:new("dgfsdhdfhs") }
+		   else              select eval { throw error:new("yaaaa--") }
+		   // All three code paths throw an error, so we get `notype` again.
 
 // Initialization semantics:
 
 // More stuff regarding untyped variants:
 	some_var unsafe type_1|type_2 = type_1 {} // This is how they have to be declared. With `unsafe`
 	some_var_2      type_1^type_2 = type_2 {} // Restriction does not apply to typed variants. They are already type-safe.
+	
+object:
+	void
+	bool
+	nullable
+	tuple(...)
+	number:
+		decimal:
+			float32     float
+			float64     double
+			dec
+			fixed(x, y)
+		integer:
+			uint8  byte   
+			uint16 word   
+			uint24 long   
+			uint32 dword  
+			uint64 qword  uint ptr
+			int8   -byte  
+			int16  -word  
+			int24  -long  
+			int32  -dword 
+			int64  -qword int
+			bigint
+	collection:
+		list:
+			dynamic_array(subtype) subtype[]
+			array(subtype, size)   subtype[size] subtype*size size*subtype
+			linked_list(subtype)
+		dict(keytype, valuetype)
+		hash_set(subtype)
+		string:
+			dynamic_array(char)  cstring
+			dynamic_array(wchar) wstring
+			ustring
+	char
+	wchar
+	uchar
+	reference(subtype)
