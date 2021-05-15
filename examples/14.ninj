@@ -147,3 +147,307 @@ proc test(in_frame ?*task_frame = null, position ?ptr) task(*string) {
 		value = frame.data_1.get_value() + "\n" + frame.data_2.get_value() + "\n" + frame.data_3.get_value() + frame.do_stuff -> cstring
 	)
 }
+
+proc read_file(file_path *string, in_frame ?*task_frame = null, position ?ptr) task(*string) {
+	frame_prototype := task_frame {
+		file_path: &"" -> *string -> &*string,
+		
+		result:    cstring {},
+		t:         thread {}
+	}
+
+	frame :=
+		when in_frame === null
+			select &frame_prototype
+		else
+			select in_frame as *task_frame as typeof &frame_prototype
+			
+	if position !== null {
+		jump position
+	}
+	
+	frame.file_path = &file_path
+
+	frame.result = ""
+	frame.t = spawn open_file(*frame.file_path, &frame.result)
+	
+	while !frame.t.finished() {
+		return task(*string):new(
+			frame    = frame,
+			position = after_return
+		)
+		after_return: do { }
+	}
+	
+	return task(*string):new(
+		value = &frame.result
+	)
+}
+
+// `await` breakdown:
+async proc some_proc() {
+	// ...
+	some_var := await some_async_proc()
+	// ...
+}
+
+// The above roughly translates to:
+
+async proc some_proc() {
+	// ...
+	
+	t := some_async_proc()
+	while !t.has_value() {
+		yield
+		t = some_async_proc(t.frame(), t.position())
+	}
+	some_var := some_async_proc.get_value()
+	
+	// ...
+}
+
+// `yield` breakdown:
+async proc some_proc() return_type {
+	// ...
+	if some_condition() {
+		yield
+		some_action()
+	}
+	// ...
+}
+
+// The above roughly translates to:
+
+proc some_proc(in_frame ?*task_frame = null, position ?ptr) {
+	frame_prototype := task_frame {
+		// Procedure parameters and local variables here
+	}
+	
+	frame :=
+		when in_frame === null
+			select &frame_prototype
+		else
+			select in_frame as *task_frame as typeof &frame_prototype
+			
+	if position !== null {
+		jump position
+	}
+
+	// ...
+	
+	if some_condition() {
+		return task(return_type):new(  // The `yield` statement
+			frame    = frame,          // The `yield` statement
+			position = after_return    // The `yield` statement
+		)                              // The `yield` statement
+		
+		after_return: do {}
+		
+		some_action()
+	}
+	
+	// ...
+}
+
+// Task frame with scoped variables:
+
+async some_proc() {
+	a := "test"
+	if a == "test" {
+		b := 0
+		c := true
+	} else {
+		b := nothing
+		c := 16w
+		d := null
+		
+		if c == 16 {
+			e := 'c'
+		} else if c == 12 {
+			e := "aaa"
+		} else {
+			f := [1, 2, 3]
+		}
+	}
+	
+	x := & char{}
+	for v, i in ['2', '4', '8', '16'] {
+		q := v->byte + 1
+		x = &v
+	}
+	
+	print(x)
+}
+
+// Frame definition for the above:
+
+frame_prototype := task_frame {
+	a: cstring {},
+	x: & char{},
+	_scoped_block_1: variant {
+		_sub_1: object {
+			b: int {},
+			c: bool {}
+		},
+		_sub_2: object {
+			b: void {},
+			c: word {},
+			d: nullable {},
+			_scoped_block_2: variant {
+				_sub_1: object {
+					e: char {}
+				},
+				_sub_2: object {
+					e: cstring {}
+				},
+				_sub_3: object {
+					f: int[3] {}
+				}
+			}
+		},
+		_sub_3: object {
+			v: char {},
+			i: uint {},
+			q: byte {}
+		}
+	}
+}
+
+// Translation of getting super-scope references to sub-scope values:
+
+proc some_proc() {
+	x := & char{}
+	arr := ['2', '4', '8', '16']
+	while i := 0 ... i < arr.count() ... i += 1 {
+		v := arr[i]
+		q := v->byte + 1
+		x = &v
+	}
+	
+	print(x)
+}
+
+// Becomes:
+
+proc some_proc() {
+	x := & char{}
+	arr := ['2', '4', '8', '16']
+	while i := 0 ... i < arr.count() ... i += 1 {
+		v := malloc(sizeof(typeof char)) as unsafe &char // `v` is a reference now. pointer + size of data is marked with the references for each byte
+		v <- arr[i] // Underlying value of `v` gets assigned to
+		q := (*v)->byte + 1 // All operations on v in the original code are actually implicitly dereferenced now
+		x = &(*v)
+	}
+	
+	print(x)
+}
+
+/*
+`v` underlying value:
+
+	+---------+
+	|   '2'   |<-- v
+	+---------+  
+	             
+	
+	
+	
+*/
+
+/*
+`v` underlying value:
+
+	+---------+
+	|   '2'   |<-+-- v
+	+---------+  |
+	             +-- x
+	
+	
+	
+*/
+
+/*
+`v` underlying value:
+
+	+---------+             +---------+
+	|   '2'   |<-+   v -->  |   '4'   |
+	+---------+  |          +---------+
+	             +-- x
+	
+	
+	
+*/
+
+/*
+`v` underlying value:
+
+	+---------+               +---------+
+	|   '2'   |      v --+->  |   '4'   |
+	+---------+          |    +---------+
+	                 x --+
+	
+	
+	
+*/
+
+/*
+`v` underlying value (Original value gets deleted once there are no references to it):
+
+	+---------+               +---------+
+	| deleted |      v --+->  |   '4'   |
+	+---------+          |    +---------+
+	                 x --+
+	
+	
+	
+*/
+
+struct reference_tree_node {
+	parent unsafe @reference_tree_node = null
+	left   unsafe @reference_tree_node = null
+	right  unsafe @reference_tree_node = null
+	
+	ref_ptr       unsafe @object = null
+	referenced_by unsafe @object = null
+	count         uint           = 0
+}
+
+struct referencer_tree_node {
+	parent  unsafe @reference_tree_node = null
+	left    unsafe @reference_tree_node = null
+	right   unsafe @reference_tree_node = null
+	
+	ref_ptr unsafe @object = null
+}
+
+struct referenced_by_record {
+	referrer    ptr
+	data_length uint64
+}
+
+reference_map  := reference_tree_node {}
+referencer_map := referencer_tree_node {}
+
+proc add_reference_to(referrer ptr, referred ptr, data_size uint64) {
+	this := #reference_map
+	that := #referencer_map
+	
+	if this@.left == null and this@.right == null and this@.ref_ptr == null {
+		this@.ref_ptr       = referred as unsafe @object
+		this@.referenced_by = malloc(sizeof(referenced_by_record)) as unsafe @object
+		this@.count         = 1
+		
+		record := this@.referenced_by
+						as unsafe @referenced_by_record
+		record@.referrer    = referrer
+		record@.data_length = data_size
+	} else {
+	}
+}
+
+proc remove_reference_to(referrer ptr, referred ptr, ref_type type) {
+}
+
+proc balance_reference_map() {
+	this := #reference_map
+}
