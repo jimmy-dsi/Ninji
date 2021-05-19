@@ -1,11 +1,10 @@
 struct reference_record {
 	ref_ptr ptr
-	info union {
+	info unsafe union {
 		start_ptr ptr
 		start struct {
-			data_size  uint40
-			ref_count  word
-			info_flags byte
+			ref_count word
+			data_size uint48
 		}
 	}
 }
@@ -22,7 +21,7 @@ struct reference_record {
 // (So if the return type differed depending on the value of `compile_time`, it would consider the overall result/return type to be the variant of the two)
 // However, once the result/return type is determined, it will remove all conditional blocks pertaining to code that does not satisfy the expression, as if it were a constant.
 // The result is this gives us a singular function that has a different body depending on whether or not we are in compile-time or run-time, but with a consistent return type between both.
-unsafe func malloc(data_size uint64, track_ptr bool = true) ptr {
+unsafe func malloc(data_size uint48, track_ptr bool = true) ptr {
 	if compile_time {
 		return magic.malloc(data_size)
 	} else {
@@ -33,7 +32,7 @@ unsafe func malloc(data_size uint64, track_ptr bool = true) ptr {
 	}
 }
 
-reference_map := object {
+reference_map := object:{
 	used_size: 0Q,
 	table:     malloc(9 * sizeof(reference_record), false)
 }
@@ -43,21 +42,34 @@ proc init_ref_map() {
 	ref_record.ref_ptr = null
 }
 
-proc find_ref_record(reference ptr) (ptr, ptr, ptr) { // Result = (found, first empty, hash-map index). If any are empty, they will be `null`
-	result := (null->ptr, null->ptr, null->ptr)
+proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (found, base, first empty, hash-map index, last-element flag). If any are empty, they will be `null`
+	result := (null->ptr, null->ptr, null->ptr, null->ptr, false)
 
 	// High-bit determines whether it's a direct array or a sub-hash-map
-	table := reference_record.table
-	while indexer := reference
+	table         := reference_record.table
+	table_stack   := [(null->ptr, null->ptr)] * 8
+	table_stack[0] = (table, null->ptr)
+	
+	level      := 1
+	base_index := 0
+	
+	while indexer := (reference & $0000FFFFFFFFFFFF) << 16 // Only the first 48-bits of the pointer are used in reality. Can ignore upper 16-bits for more efficient hashing
 		... table != null and table & $8000000000000000 > 0
-		... indexer <<= 8
+		... indexer = (indexer & $00FFFFFFFFFFFFFF) << 8
 	{
-		result.item2 = table & $7FFFFFFFFFFFFFFF + (indexer & $FF00000000000000).hi.hi.hi * sizeof(ptr) as unsafe ptr
-		next_table := @(result.item2 as unsafe #ptr)
-		if next_table == null {
-			return result
-		}
+		index     := (indexer & $FF00000000000000).hi.hi.hi
+		base_index = index
+		result:[3] = table & $7FFFFFFFFFFFFFFF + index * sizeof(ptr) as unsafe ptr
+		
+		next_table := @(result:[3] as unsafe #ptr)
 		table = next_table
+		
+		table_stack[level] = (table, index << 40 >> ((level-1) * 8) | table_stack[level - 1]:[1])
+		level += 1
+	}
+	
+	if table == null {
+		// TODO: Find closest valid hash table before this one (will be recursive)
 	}
 	
 	found_ref_record   := null->ptr
@@ -65,44 +77,49 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr) { // Result = (found, first 
 	closest_ref_ptr    := 0
 	// Search for matching record in direct array
 	while ref_record := table as unsafe #reference_record
+			i := 0
 		... true
 		... ref_record = ref_record as unsafe ptr + sizeof(reference_record) as unsafe #reference_record
+			i += 1
 	{
 		if ref_record.ref_ptr == null {
-			if ref_record.info.start_ptr == null {
+			if ref_record.info.start_ptr == null { // This indicates the end of the list
 				if first_empty_record == null {
-					first_empty_record = ref_record
+					first_empty_record = ref_record as unsafe ptr
+					if i == 8 {
+						result:[4] = true
+					}
 				}
 				break
 			} else if first_empty_record == null {
-				first_empty_record = ref_record
+				first_empty_record = ref_record as unsafe ptr
 			}
 		} else if ref_record.ref_ptr > closest_ref_ptr and ref_record.ref_ptr <= reference {
 			closest_ref_ptr  = ref_record.ref_ptr
-			found_ref_record = ref_record
+			found_ref_record = ref_record as unsafe ptr
 		}
 	}
 	
-	result.item1 = first_empty_record
+	result:[2] = first_empty_record
 	
 	if found_ref_record != null {
 		ref_record := found_ref_record as unsafe #reference_record
 		if ref_record.ref_ptr == reference {
-			result.item0 = found_ref_record
+			result:[0] = found_ref_record
 			return result
 		}
 		
 		// High bit set means this is the starting block
-		if ref_record.info.start.info_flags & $80 > 0 {
+		if ref_record.info.start.start_ptr & $8000000000000000 > 0 {
 			// reference ptr must be within the starting data block
-			if ref_record.ref_ptr + ref_record.info.start.data_size > reference {
-				result.item0 = found_ref_record
+			if ref_record.ref_ptr + ref_record.info.start.data_size & $7FFFFFFFFFFF > reference {
+				result:[1] = found_ref_record
 				return result
 			}
 		} else {
 			ref_record = ref_record.info.start_ptr as unsafe #reference_record // Find the record corresponding to the start of the block
-			if ref_record.ref_ptr + ref_record.info.start.data_size > reference {
-				result.item0 = found_ref_record
+			if ref_record.ref_ptr + ref_record.info.start.data_size & $7FFFFFFFFFFF > reference {
+				result:[1] = found_ref_record
 				return result
 			}
 		}
@@ -111,15 +128,45 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr) { // Result = (found, first 
 	return result
 }
 
-proc add_ref_record(reference ptr, data_size uint64) ptr {
-	
+proc add_ref_record(reference ptr, data_size uint48, add_to_count bool = false) (ptr, ptr, ptr) {
+	found, base, first, index, last := find_ref_record(reference)
+	if found != null {
+		found_record := record as unsafe #reference_record
+		if found_record.info.start_ptr & $8000000000000000 == 0 {
+			found_record = found_record.info.start_ptr as unsafe #reference_record
+		}
+		if add_to_count {
+			found_record.info.ref_count += 1 // Increase reference count if the reference record already exists
+		}
+	} else {
+		// Otherwise, add the record
+		if last {
+		} else if first != null {
+			new_record := first as unsafe #reference_record
+			if new_record.ref_ptr == null and new_record.info.start_ptr == null { // If completely blank, append to list
+				final_record := first + sizeof(reference_record) as unsafe #reference_record
+				final_record.ref_ptr   = null
+				final_record.start_ptr = null
+			}
+			
+			new_record.ref_ptr = reference
+			new_record.info.ref_count =
+				when add_to_count
+					select 1
+				else
+					select 0
+			new_record.info.data_size = data_size | $800000000000
+		} else if index != null {
+			
+		}
+	}
 }
 
-global_x   := & some_struct{} // Global or static references will ALWAYS have their values initialized with malloc().
-global_val :=   some_struct{} // Global VALUES never have to be malloc()'d. There is no need, they exist everywhere.
+global_x   := &some_struct:{} // Global or static references will ALWAYS have their values initialized with malloc().
+global_val :=  some_struct:{} // Global VALUES never have to be malloc()'d. There is no need, they exist everywhere.
 
 proc test() {
-	ref := & uint{}
+	ref := & uint:{}
 	x := true
 	
 	if x {
@@ -132,7 +179,7 @@ proc test() {
 
 proc test_2(x int) {
 	a := "dhjgfd"
-	b := & cstring{}
+	b := & cstring:{}
 	
 	if x == 0 {
 		b = &a
