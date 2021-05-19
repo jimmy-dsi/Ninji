@@ -1,0 +1,172 @@
+struct reference_record {
+	ref_ptr ptr
+	info union {
+		start_ptr ptr
+		start struct {
+			data_size  uint40
+			ref_count  word
+			info_flags byte
+		}
+	}
+}
+
+// Marking a `func` as `unsafe` disables the caching capabilities of the function.
+// At compile-time, it can still be used in a constant expression, however, it still cannot call procedures. Only other `func`s or `unsafe` `func`s.
+// At run-time, this is equivalent to a procedure.
+// `unsafe` `func`s are useful when you have a function that you want to behave differently at compile-time than run-time, but at run-time must be a procedure.
+// You can use the constant `compile_time` to check which one the currently called function is in.
+// At compile-time, `compile_time` is `true`. At run-time, it is `false`.
+// It is what's known as a "magic constant" and it is the only variable of this type; not quite a run-time variable and not quite a constant.
+// Depending on the context, it can be treated as either one.
+// Essentially, it is treated as a runtime variable when evaluating the result/return type of all code-paths.
+// (So if the return type differed depending on the value of `compile_time`, it would consider the overall result/return type to be the variant of the two)
+// However, once the result/return type is determined, it will remove all conditional blocks pertaining to code that does not satisfy the expression, as if it were a constant.
+// The result is this gives us a singular function that has a different body depending on whether or not we are in compile-time or run-time, but with a consistent return type between both.
+unsafe func malloc(data_size uint64, track_ptr bool = true) ptr {
+	if compile_time {
+		return magic.malloc(data_size)
+	} else {
+		reference_map.used_size += data_size
+		return ```C void* (uint64_t data_size) {
+			return malloc(data_size)
+		}```
+	}
+}
+
+reference_map := object {
+	used_size: 0Q,
+	table:     malloc(9 * sizeof(reference_record), false)
+}
+
+proc init_ref_map() {
+	ref_record = reference_map.table as unsafe #reference_record
+	ref_record.ref_ptr = null
+}
+
+proc find_ref_record(reference ptr) (ptr, ptr, ptr) { // Result = (found, first empty, hash-map index). If any are empty, they will be `null`
+	result := (null->ptr, null->ptr, null->ptr)
+
+	// High-bit determines whether it's a direct array or a sub-hash-map
+	table := reference_record.table
+	while indexer := reference
+		... table != null and table & $8000000000000000 > 0
+		... indexer <<= 8
+	{
+		result.item2 = table & $7FFFFFFFFFFFFFFF + (indexer & $FF00000000000000).hi.hi.hi * sizeof(ptr) as unsafe ptr
+		next_table := @(result.item2 as unsafe #ptr)
+		if next_table == null {
+			return result
+		}
+		table = next_table
+	}
+	
+	found_ref_record   := null->ptr
+	first_empty_record := null->ptr
+	closest_ref_ptr    := 0
+	// Search for matching record in direct array
+	while ref_record := table as unsafe #reference_record
+		... true
+		... ref_record = ref_record as unsafe ptr + sizeof(reference_record) as unsafe #reference_record
+	{
+		if ref_record.ref_ptr == null {
+			if ref_record.info.start_ptr == null {
+				if first_empty_record == null {
+					first_empty_record = ref_record
+				}
+				break
+			} else if first_empty_record == null {
+				first_empty_record = ref_record
+			}
+		} else if ref_record.ref_ptr > closest_ref_ptr and ref_record.ref_ptr <= reference {
+			closest_ref_ptr  = ref_record.ref_ptr
+			found_ref_record = ref_record
+		}
+	}
+	
+	result.item1 = first_empty_record
+	
+	if found_ref_record != null {
+		ref_record := found_ref_record as unsafe #reference_record
+		if ref_record.ref_ptr == reference {
+			result.item0 = found_ref_record
+			return result
+		}
+		
+		// High bit set means this is the starting block
+		if ref_record.info.start.info_flags & $80 > 0 {
+			// reference ptr must be within the starting data block
+			if ref_record.ref_ptr + ref_record.info.start.data_size > reference {
+				result.item0 = found_ref_record
+				return result
+			}
+		} else {
+			ref_record = ref_record.info.start_ptr as unsafe #reference_record // Find the record corresponding to the start of the block
+			if ref_record.ref_ptr + ref_record.info.start.data_size > reference {
+				result.item0 = found_ref_record
+				return result
+			}
+		}
+	}
+	
+	return result
+}
+
+proc add_ref_record(reference ptr, data_size uint64) ptr {
+	
+}
+
+global_x   := & some_struct{} // Global or static references will ALWAYS have their values initialized with malloc().
+global_val :=   some_struct{} // Global VALUES never have to be malloc()'d. There is no need, they exist everywhere.
+
+proc test() {
+	ref := & uint{}
+	x := true
+	
+	if x {
+		y := 0 // implicit malloc()
+		ref = &y
+	}
+	
+	return ref // If a reference is returned, anything and everything it references will be malloc()'d
+}
+
+proc test_2(x int) {
+	a := "dhjgfd"
+	b := & cstring{}
+	
+	if x == 0 {
+		b = &a
+	}
+	
+	return b // The return forces `a` to be malloc()'d, as well as the cstring{} constructor. Basically any possible value that `b` could be
+}
+
+proc test_3(x &int) {
+	return x // Nothing allocated, so nothing to malloc(). The original source `x` that was passed will not NECESSARILY be malloc()'d
+}
+
+proc test_4(x &int, y bool) {
+	z := 42 // This, however, will be malloc()'d.
+	if y {
+		x = &z
+	}
+	return x // Due to this return
+}
+
+proc test_5() {
+	aa := 4
+	a := &aa
+	test_3(a) // `test_3()` will be statically analyzed to determine if any references to `a` are stored to a higher scope than `test_3()`. If it is, `aa` will be malloc()'d.
+	do {
+		bb := -6
+		b := &bb
+		a = test3(b) // `test_3()` will be statically analyzed to determine if any code paths result in the input parameter being returned directly. If this is POSSIBLE (not necessarily true) then `bb` will be malloc()'d.
+		// The above also goes if result is returned or stored to any higher scoped variable. If it were stored to a same-scope variable other than `a`, then no malloc would be needed.
+	}
+}
+
+proc test_6() {
+	a := 500W
+	r := &a.lo
+	return r // Even though it's referencing only a portion of `a`, the entirety of `a` has to be malloc()'d in order to prevent dangling references here.
+}

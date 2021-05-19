@@ -1,0 +1,21 @@
+struct linked_list(subtype type) : list_node(subtype) {
+	_count uint
+	
+	func ::new() & {
+		return & linked_list(subtype) {
+			_prev: &.,
+			_next: &.
+		}
+	}
+	
+	func delete() {
+		clean_up()
+	}
+}
+
+struct list_node(subtype type) {
+	_prev *list_node(subtype)
+	_next *list_node(subtype)
+	
+	_value subtype
+}

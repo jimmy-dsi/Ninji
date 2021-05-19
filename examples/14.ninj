@@ -402,52 +402,12 @@ proc some_proc() {
 	
 */
 
-struct reference_tree_node {
-	parent unsafe @reference_tree_node = null
-	left   unsafe @reference_tree_node = null
-	right  unsafe @reference_tree_node = null
-	
-	ref_ptr       unsafe @object = null
-	referenced_by unsafe @object = null
-	count         uint           = 0
+struct reference_record_hash_map {
+	table ptr[0x100]
 }
 
-struct referencer_tree_node {
-	parent  unsafe @reference_tree_node = null
-	left    unsafe @reference_tree_node = null
-	right   unsafe @reference_tree_node = null
-	
-	ref_ptr unsafe @object = null
-}
-
-struct referenced_by_record {
-	referrer    ptr
-	data_length uint64
-}
-
-reference_map  := reference_tree_node {}
-referencer_map := referencer_tree_node {}
-
-proc add_reference_to(referrer ptr, referred ptr, data_size uint64) {
-	this := #reference_map
-	that := #referencer_map
-	
-	if this@.left == null and this@.right == null and this@.ref_ptr == null {
-		this@.ref_ptr       = referred as unsafe @object
-		this@.referenced_by = malloc(sizeof(referenced_by_record)) as unsafe @object
-		this@.count         = 1
-		
-		record := this@.referenced_by
-						as unsafe @referenced_by_record
-		record@.referrer    = referrer
-		record@.data_length = data_size
-	} else {
-	}
-}
-
-proc remove_reference_to(referrer ptr, referred ptr, ref_type type) {
-}
-
-proc balance_reference_map() {
-	this := #reference_map
+struct reference_record {
+	to_ptr_suffix  uint
+	from_ptr_list  ptr
+	object_type_id uint
 }
