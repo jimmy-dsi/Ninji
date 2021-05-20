@@ -43,8 +43,7 @@ func some_func_2(x int) func:(int, *string) bool /* Type signature of standard f
 	}
 }
 
-func some_func_3(x int) struct{value int}?:func:(int, *string) bool /* This is the type signature of nested-functions.. kinda gross. Maybe can be simplified in later version. */
-/* Note the question mark. Without it, we get a method function. The `?` indicates that the method also has a default `this` (which is the struct containing the parent function's values) */ {
+func some_func_3(x int) func:(int, *string, *struct{value *int}?) bool /* This is the type signature of nested-functions. Basically just has an implicit final parameter */ {
 	value := crandom(0)
 
 	func_a := func(n int, s *string) {
