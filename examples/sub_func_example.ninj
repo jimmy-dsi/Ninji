@@ -1,0 +1,63 @@
+func some_func(b byte, s *string) *string {
+	c := b -> char
+
+	func_a := func(x int) {
+		if x >= 10 {
+			return "large"
+		} else {
+			return "small"
+		}
+	}
+	
+	func_b := func() {
+		return c == ' ' || '\t' || '\r' || '\n'
+	}
+	
+	// `func_a` is a true function as it does not reference any outside variables.
+	// `func_b` is considered a nsted-function since it references values in the parent function.
+	// It is allowed to be defined with `func`, but if it referenced values not even present in the PARENT function, we would have to call it a procedure.
+	// The reason for allowing functions to do this is so that we can still call nested-functions within functions called at compile-time.
+	
+	if func_b() {
+		return func_a(s.count()) + " - amount"
+	} else {
+		return "no whitespace allowed"
+	}
+}
+
+func some_func_2(x int) func:(int, *string) bool /* Type signature of standard functions. Note the colon. This is needed to differentiate it from a VALUE of a func type*/ {
+	value := crandom(0)
+
+	func_a := func(n int, s *string) {
+		return s * n
+	}
+	
+	func_b := func(n int, s *string) {
+		return $"s: {n + value}"
+	}
+	
+	if func_a(x, "test").count() > 4 {
+		return func_a // Allowed
+	} else {
+		return func_b // Not allowed. Procedures that reference variables in the parent procedure have a special type, so the return type doesn't match
+	}
+}
+
+func some_func_3(x int) struct{value int}?:func:(int, *string) bool /* This is the type signature of nested-functions.. kinda gross. Maybe can be simplified in later version. */
+/* Note the question mark. Without it, we get a method function. The `?` indicates that the method also has a default `this` (which is the struct containing the parent function's values) */ {
+	value := crandom(0)
+
+	func_a := func(n int, s *string) {
+		return s * n
+	}
+	
+	func_b := func(n int, s *string) {
+		return $"s: {n + value}"
+	}
+	
+	if func_a(x, "test").count() > 4 {
+		return func_a // Now THIS one isn't allowed
+	} else {
+		return func_b // Now it's allowed. It returns a function with a special struct containing the info from the parent function, and implicitly passes the struct value into the function.
+	}
+}

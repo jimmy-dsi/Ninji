@@ -59,12 +59,12 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 	{
 		index     := (indexer & $FF00000000000000).hi.hi.hi
 		base_index = index
-		result:[3] = table & $7FFFFFFFFFFFFFFF + index * sizeof(ptr) as unsafe ptr
+		result.[3] = table & $7FFFFFFFFFFFFFFF + index * sizeof(ptr) as unsafe ptr
 		
 		next_table := @(result:[3] as unsafe #ptr)
 		table = next_table
 		
-		table_stack[level] = (table, index << 40 >> ((level-1) * 8) | table_stack[level - 1]:[1])
+		table_stack[level] = (table, index << 40 >> ((level-1) * 8) | table_stack[level - 1].[1])
 		level += 1
 	}
 	
@@ -87,7 +87,7 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 				if first_empty_record == null {
 					first_empty_record = ref_record as unsafe ptr
 					if i == 8 {
-						result:[4] = true
+						result.[4] = true
 					}
 				}
 				break
@@ -100,12 +100,12 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 		}
 	}
 	
-	result:[2] = first_empty_record
+	result.[2] = first_empty_record
 	
 	if found_ref_record != null {
 		ref_record := found_ref_record as unsafe #reference_record
 		if ref_record.ref_ptr == reference {
-			result:[0] = found_ref_record
+			result.[0] = found_ref_record
 			return result
 		}
 		
@@ -113,13 +113,13 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 		if ref_record.info.start.start_ptr & $8000000000000000 > 0 {
 			// reference ptr must be within the starting data block
 			if ref_record.ref_ptr + ref_record.info.start.data_size & $7FFFFFFFFFFF > reference {
-				result:[1] = found_ref_record
+				result.[1] = found_ref_record
 				return result
 			}
 		} else {
 			ref_record = ref_record.info.start_ptr as unsafe #reference_record // Find the record corresponding to the start of the block
 			if ref_record.ref_ptr + ref_record.info.start.data_size & $7FFFFFFFFFFF > reference {
-				result:[1] = found_ref_record
+				result.[1] = found_ref_record
 				return result
 			}
 		}
