@@ -25,7 +25,7 @@ func some_func(b byte, s *string) *string {
 	}
 }
 
-func some_func_2(x int) func:(int, *string) bool /* Type signature of standard functions. Note the colon. This is needed to differentiate it from a VALUE of a func type*/ {
+func some_func_2(x int) func(int, *string) bool /* Type signature of standard functions. Differentiated from a VALUE of a func type simply due to the fact that each parameter is only a type, and not a value + type */ {
 	value := crandom(0)
 
 	func_a := func(n int, s *string) {
@@ -43,7 +43,7 @@ func some_func_2(x int) func:(int, *string) bool /* Type signature of standard f
 	}
 }
 
-func some_func_3(x int) func:(int, *string, *struct{value *int}?) bool /* This is the type signature of nested-functions. Basically just has an implicit final parameter */ {
+func some_func_3(x int) func(int, *string, *struct{value *int}?) bool /* This is the type signature of nested-functions. Basically just has an implicit final parameter */ {
 	value := crandom(0)
 
 	func_a := func(n int, s *string) {
@@ -59,4 +59,59 @@ func some_func_3(x int) func:(int, *string, *struct{value *int}?) bool /* This i
 	} else {
 		return func_b // Now it's allowed. It returns a function with a special struct containing the info from the parent function, and implicitly passes the struct value into the function.
 	}
+}
+
+func some_func_4(x int) proc(*) bool /* `*` must be used for empty parameter lists, to differentiate it from value */ {
+	p := proc() {
+		some_global += 1
+		return some_global < 0
+	}
+	return p
+}
+
+func some_func_5(x int) proc(*struct{x *int sum *int}?) bool {
+	sum := 0
+	p := nested proc() { // Using the `nested` keyword allows us to use nested procedures that modify a value from the parent function. NESTED procedures may be used inside a function, only if the nested procedure is declared in the function
+		// In reality, a nested procedure does not differ in type from a standard procedure, it just signals the compiler to check to make sure that any outside modified variables may ONLY belong to the parent function.
+		// Once it is returned or passed into another procedure, it is treated as a standard procedure (therefore, it cannot be called inside other FUNCTIONS, only procedures)
+		sum += x
+		return sum >= 10
+	}
+	return p
+}
+
+func some_func_6(x int) func({*object}) int /* For ... params, use type + braces instead */ {
+	f := func(... *object) {
+		output := ""
+		while i := 0, i < argument_count(), i += 1 {
+			value := argument(i)
+			output += $"{value}, "
+		}
+		output += $"{x}"
+		return output.count()
+	}
+	return f
+}
+
+func some_func_7(x int) proc(*string, int?) int /* Parameters that have defaults are indicated with a postfix `?`. The value of the default is stored along with the function value. Don't confuse this with pre-fix `?` aka the nullable operator */ {
+	p := proc(s *string, i int = 20) {
+		return some_global + i
+	}
+	return p when x > 2 else throw error:new()
+}
+
+func some_func_8(x int) func(int, bool?, ?char?, {?*string}) bool /* Put it allll together */ {
+	f := func(a int, b bool = true, c ?char = ' ', ... ?*string) {
+		return c == 'a' and b or a > 7 + argument_count()
+	}
+	
+	ff := func(a int, b bool = false, c ?char = 'q', ... ?*string) {
+		return c == 'q' and !b or a > 19 + argument_count()
+	}
+	
+	return
+		when f(17, _, 'q', "dsjkhf", "sahjfassfhdjs", "something") // For function variables, we cannot use the names of parameters for defaults. We instead must use `_` if we want to use the default values
+			select f
+		else
+			select ff
 }

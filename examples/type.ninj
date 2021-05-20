@@ -1,0 +1,89 @@
+struct type {
+	id           uint32 // Highest 4 bits are indirection level `&`
+			     
+	category	 byte // 0 = struct, 1 = union, 2 = variant
+				 
+	generics     generic[]
+	members      member[]
+	methods      procedure[]
+			   
+	parent      ~uint32 // Prefix `~` means VOIDABLE (aka `uint32^void`). Similar to nullable but the non-void part can retain its value
+	interfaces   uint32[]
+	children     uint32[]
+	
+	member_names dict(*string, uint64) // Maps strings to member indexes
+	method_names dict(*string, uint64) // Maps strings to method indexes
+	
+	func negate() type {
+		return map this {
+			case uint8:    int8
+			case int8:    uint8
+			case uint16:  int16
+			case int16:  uint16
+			case uint24:  int24
+			case int24:  uint24
+			case uint32:  int32
+			case int32:  uint32
+			case uint40:  int40
+			case int40:  uint40
+			case uint48:  int48
+			case int48:  uint48
+			case uint56:  int56
+			case int56:  uint56
+			case uint64:  int64
+			case int64:  uint64
+			default:     throw error:new($"Cannot apply negation operator on type: {this}", errors.type_error)
+		}
+	}
+	
+	func multiply(rhs) {
+		if typeof rhs == uint8 || int8 || uint16 || int16
+			|| uint24 || int24 || uint32 || int32
+			|| uint40 || int40 || uint48 || int48
+			|| uint56 || int56 || uint64 || int64
+		{
+			return array(this, rhs)
+		}
+	}
+	
+	func access_get(...) {
+		if parameter_count() == 0 {
+			return dynamic_array(this)
+		} else if parameter_count() == 1 {
+			if typeof argument(0) == uint8 || int8 || uint16 || int16
+				|| uint24 || int24 || uint32 || int32
+				|| uint40 || int40 || uint48 || int48
+				|| uint56 || int56 || uint64 || int64
+			{
+				return array(this, argument(0))
+			}
+		} else {
+			if typeof argument(0) == uint8 || int8 || uint16 || int16
+				|| uint24 || int24 || uint32 || int32
+				|| uint40 || int40 || uint48 || int48
+				|| uint56 || int56 || uint64 || int64
+			{
+				return array(access_get(...argument_array()[::-1])), argument(argument_count() - 1))
+			}
+		}
+	}
+}
+
+struct generic {
+	generic_type   uint32
+	generic_value *object
+}
+
+struct member {
+	member_type uint32
+}
+
+unsafe func get_type(id uint32) type {
+	if compile_time {
+		return magic:get_type(id)
+	} else {
+		base_type := *__type_cache__[id & $0FFFFFFF] // Remove indirection bits from type id for indexing and OR them back in
+		base_type.id |= id & $F0000000               // Remove indirection bits from type id for indexing and OR them back in
+		return base_type
+	}
+}

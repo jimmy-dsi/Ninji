@@ -61,7 +61,7 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 		base_index = index
 		result.[3] = table & $7FFFFFFFFFFFFFFF + index * sizeof(ptr) as unsafe ptr
 		
-		next_table := @(result:[3] as unsafe #ptr)
+		next_table := @(result.[3] as unsafe #ptr)
 		table = next_table
 		
 		table_stack[level] = (table, index << 40 >> ((level-1) * 8) | table_stack[level - 1].[1])
@@ -77,9 +77,9 @@ proc find_ref_record(reference ptr) (ptr, ptr, ptr, ptr, bool) { // Result = (fo
 	closest_ref_ptr    := 0
 	// Search for matching record in direct array
 	while ref_record := table as unsafe #reference_record
-			i := 0
-		... true
-		... ref_record = ref_record as unsafe ptr + sizeof(reference_record) as unsafe #reference_record
+			i := 0,
+		true,
+		ref_record = ref_record as unsafe ptr + sizeof(reference_record) as unsafe #reference_record
 			i += 1
 	{
 		if ref_record.ref_ptr == null {
