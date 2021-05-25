@@ -97,7 +97,7 @@ func some_func_7(x int) proc(*string, int?) int /* Parameters that have defaults
 	p := proc(s *string, i int = 20) {
 		return some_global + i
 	}
-	return p when x > 2 else throw error:new()
+	return when x > 2 => p else => throw error:new()
 }
 
 func some_func_8(x int) func(int, bool?, ?char?, {?*string}) bool /* Put it allll together */ {

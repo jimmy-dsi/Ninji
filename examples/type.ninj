@@ -1,15 +1,16 @@
 struct type {
-	id           uint32 // Highest 4 bits are indirection level `&`
-			     
-	category	 byte // 0 = struct, 1 = union, 2 = variant
+	id          uint32 // Highest 4 bits are indirection level `&`
+			    
+	category	byte // 0 = struct, 1 = union, 2 = variant
+	size        uint64
 				 
-	generics     generic[]
-	members      member[]
-	methods      procedure[]
+	generics    generic[]
+	members     member[]
+	methods     procedure[]
 			   
-	parent      ~uint32 // Prefix `~` means VOIDABLE (aka `uint32^void`). Similar to nullable but the non-void part can retain its value
-	interfaces   uint32[]
-	children     uint32[]
+	parent     ~uint32 // Prefix `~` means VOIDABLE (aka `uint32^void`). Similar to nullable but the non-void part can retain its value
+	interfaces  uint32[]
+	children    uint32[]
 	
 	member_names dict(*string, uint64) // Maps strings to member indexes
 	method_names dict(*string, uint64) // Maps strings to method indexes
@@ -34,6 +35,50 @@ struct type {
 			case int64:  uint64
 			default:     throw error:new($"Cannot apply negation operator on type: {this}", errors.type_error)
 		}
+	}
+	
+	func negate_2() type {
+		return this ^ void
+	}
+	
+	func ask() type {
+		return this ^ nullable
+	}
+	
+	func ask_2() type {
+		return unsafe this | nullable
+	}
+	
+	func prefix_pipe() type {
+		type := *this
+		for child in children {
+			type |= |get_type(child)
+		}
+	}
+	
+	func prefix_caret() type {
+		type := *this
+		for child in children {
+			type ^= ^get_type(child)
+		}
+	}
+	
+	func pipe(rhs) type {
+		// TODO: Sort types and expand variant rhs's
+	}
+	
+	func conjunct(rhs) type {
+		// TODO: Intersect types
+	}
+	
+	func caret(rhs) type {
+		// TODO: Sort types and expand variant rhs's
+	}
+	
+	func reference() {
+		indirection_level := id >> 28
+		new_type := *this
+		new_type.id = id & $0FFFFFFF | ((indirection_level + 1) << 28)
 	}
 	
 	func multiply(rhs) {
@@ -86,4 +131,8 @@ unsafe func get_type(id uint32) type {
 		base_type.id |= id & $F0000000               // Remove indirection bits from type id for indexing and OR them back in
 		return base_type
 	}
+}
+
+func sizeof(type type) {
+	return type.size
 }
